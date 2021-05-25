@@ -3,6 +3,6 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     createDatabase: () => ipcRenderer.invoke('create-database'),
-    openExternal: () => shell.openExternal('https://github.com/Linnas/RNAi-designer')
+    openExternal: (url) => shell.openExternal(url)
   }
 )

@@ -62,7 +62,9 @@ export default {
   methods:{
     openExternal(v) {
       if (v === 0) {
-        window.electron.openExternal()
+        window.electron.openExternal('https://github.com/Linnas/RNAi-designer')
+      } else if (v === 1) {
+        window.electron.openExternal('http://8.131.68.217/')
       }
     }
   }
