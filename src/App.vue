@@ -8,7 +8,8 @@
             text 
             v-for="(title) in left_titles" 
             :key="title.text" 
-            class="mx-4" 
+            class="mx-4"
+             
             >
               <v-icon>{{ title.icon }}</v-icon>
               <div>{{ title.text }}</div>
@@ -18,7 +19,8 @@
           <span class="display-1 primary--text">RNAi Designer</span>
         </v-col>
         <v-col class="d-flex justify-center" cols="5" >
-          <v-btn text v-for="title in right_titles" :key="title.text" class="mx-4">
+          <v-btn text v-for="(title, idx) in right_titles" :key="title.text" class="mx-4"
+          @click="openExternal(idx)">
             <v-icon>{{ title.icon }}</v-icon>
             <div>{{ title.text }}</div>
           </v-btn>     
@@ -58,7 +60,11 @@ export default {
     }]
   }),
   methods:{
-    
+    openExternal(v) {
+      if (v === 0) {
+        window.electron.openExternal()
+      }
+    }
   }
 };
 </script>

@@ -93,7 +93,6 @@ export default {
     }
   },
   created() {
-    console.log(window.ipc)
   },
   computed: {
     ...mapState([
@@ -103,7 +102,7 @@ export default {
   methods: {
     ...mapActions(["addDatabase", "removeDatabase", "editDatabase", "toggleEdit"]),
     createDatabase() {
-    window.ipc.createDatabase().then(res => {
+    window.electron.createDatabase().then(res => {
       console.log(res)
       if(res.canceled) {
         return
@@ -115,8 +114,6 @@ export default {
       })
       }
     })
-    
-
     },
     doneEdit(e) {
       const value = e.target.value.trim();
