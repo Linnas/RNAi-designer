@@ -1,8 +1,8 @@
 <template>
   <v-app>
     <v-app-bar app>
-      <v-row>
-        <v-col class="d-flex justify-center text-center" cols="5">
+      <v-row class="d-flex justify-center text-center">
+        <v-col  cols="4">
           <databaseDialog/>
           <v-btn 
             text 
@@ -15,10 +15,10 @@
               <div>{{ title.text }}</div>
           </v-btn> 
         </v-col>
-        <v-col cols="2" >
-          <span class="display-1 primary--text">RNAi Designer</span>
+        <v-col cols="4" >
+          <div class="display-1 primary--text">RNAi Designer</div>
         </v-col>
-        <v-col class="d-flex justify-center" cols="5" >
+        <v-col class="d-flex justify-center" cols="4" >
           <v-btn text v-for="(title, idx) in right_titles" :key="title.text" class="mx-4"
           @click="openExternal(idx)">
             <v-icon>{{ title.icon }}</v-icon>
