@@ -16,7 +16,7 @@ vue + vue-cli + django + electronjs + vuetify
 2. Find all possible siRNA sequence.
 3. Align each candidate sequence with genome index using Bowtie
 4. Test with RNAplfold.
-5. Check effiency of candidate sequence.
+5. Check efficiency of candidate sequence.
 6. Output analysis.
 
 
