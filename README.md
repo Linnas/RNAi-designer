@@ -1,24 +1,24 @@
-# rnai
+
+# RNAi designer
 
 ## Project setup
 ```
 npm install
+npm run electron:serve
+npm run electron:build
 ```
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+### Framework
+vue + vue-cli + django + electronjs + vuetify
 
-### Compiles and minifies for production
-```
-npm run build
-```
+### Pipeline
+1. Input target sequences into textarea or upload file
+2. Find all possible siRNA sequence.
+3. Align each candidate sequence with genome index using Bowtie
+4. Test with RNAplfold.
+5. Check effiency of candidate sequence.
+6. Output analysis.
 
-### Lints and fixes files
-```
-npm run lint
-```
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
