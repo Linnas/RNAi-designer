@@ -5,7 +5,7 @@ import Tabular from './components/aligntable.vue'
 
 Vue.use(VueRouter)
 
-const router = new VueRouter({
+export default new VueRouter({
   routes: [
     {
       path: '/',
@@ -13,9 +13,9 @@ const router = new VueRouter({
       component: Pipeline,
     },
     {
-    	path: '/tabular',
-    	name:'aligntable',
-    	component: Tabular
+      path: '/tabular',
+      name:'aligntable',
+      component: Tabular
     }
   ]
 })

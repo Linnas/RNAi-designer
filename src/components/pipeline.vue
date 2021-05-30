@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <v-row class="mt-6 d-flex justify-center" v-show="!tableTab">
+    <v-row class="mt-6 d-flex justify-center">
       <v-col cols="4" class="pr-8">
         <v-select
           :items="databases"
@@ -31,7 +31,7 @@
         ></v-textarea>
         <v-row>
           <v-col class="d-flex justify-center">
-            <v-btn rounded color="primary" x-large @click="startPipeline()">parse</v-btn>
+            <v-btn rounded color="primary" x-large @click="startPipeline()" :loading="loading">parse</v-btn>
           </v-col>
         </v-row>
       </v-col>
@@ -57,14 +57,6 @@
         </v-row>
       </v-col>
     </v-row>
-    <v-row v-show="tableTab">
-       <v-data-table
-          :headers="headers"
-          :items="reads"
-          class="elevation-1"
-        >
-        </v-data-table>
-    </v-row>
   </v-container>
 </template>
 
@@ -77,30 +69,8 @@ export default {
     mismatch:0,
     sequences:'',
     database:'',
-    tableTab: false,
-    headers:[{
-      text: 'Read Name',
-      value: 'name'
-    }, {
-      text: 'Reference strand',
-      value: 'strand'
-    }, {
-      text: 'Reference Name',
-      value: 'rname'
-    }, {
-      text: 'Offset',
-      value: 'offset'
-    }, {
-      text: 'Read sequence',
-      value: 'sequence'
-    }, {
-      text: 'Same Align',
-      value:'total'
-    }, {
-      text:'mismatch',
-      value: 'mismatch'
-    }],
     reads:[],
+    loading: false,
     items:[{
       status:true,
       label:'5\' Terminal nucleotide rule'
@@ -135,6 +105,7 @@ export default {
   },
   methods: {
     startPipeline() {
+      this.loading = true;
       var no_efficience = true;
       const { siRNA_size, mismatch, sequences, items } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
@@ -157,20 +128,13 @@ export default {
       console.log(query)
       this.axios.post('http://localhost:8000/analysis/run_pipeline', query).then((res) => {
         console.log(res.data);
-        var align_data = res.data.align_data
-        this.reads = align_data.map( function(r){
-          return {
-            name: r[0],
-            strand: r[1],
-            rname: r[2],
-            offset: r[3],
-            sequence: r[4],
-            total: r[6],
-            mismatch: r[7]
-          }
-        })
-        console.log(this.reads)
-        this.tableTab = true
+        this.loading = false;
+        var align_data = res.data.align_data;
+        this.$store.state.alignData = align_data;
+        this.$router.push({ name: 'aligntable'})
+      }).catch(err => {
+        console.log(err);
+        this.loading = false;
       })
     }
     

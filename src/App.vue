@@ -28,21 +28,20 @@
       </v-row>
     </v-app-bar>
     <v-main>
-      <Pipeline/>
+      <keep-alive>
+        <router-view></router-view>        
+      </keep-alive>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import Pipeline from './components/pipeline';
 import databaseDialog from './components/database_dialog'
 export default {
   name: 'App',
   components: {
-    Pipeline,
     databaseDialog
   },
-
   data: () => ({
     left_titles:[{
       icon:"mdi-file-document",

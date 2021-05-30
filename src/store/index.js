@@ -6,7 +6,8 @@ import actions from './actions'
 Vue.use(Vuex)
 
 const state = {
-	databases:[]
+	databases:[],
+  alignData:[]
 }
 
 export default new Vuex.Store({

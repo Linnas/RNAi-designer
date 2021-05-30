@@ -66,49 +66,33 @@ class SifiPipeline(object):
         # Iterate over all query sequences
         for seq_record in SeqIO.parse(self.query_sequences, "fasta"):
             # Store ID and sequence
-            query_name = seq_record.id
+            self.query_name = seq_record.id
             query_sequence = str(seq_record.seq)
             self.len_seq = len(query_sequence)
 
             # Create a temp single fasta file of the query sequence
-            query_seq_temp_file = self.create_single_fasta_file(query_name, query_sequence)
+            query_seq_temp_file = self.create_single_fasta_file(self.query_name, query_sequence)
 
             # Create all siRNAs of size "sirna_size" and save them into multi fasta file
-            sirna_file, tab_file_name = self.create_sirnas(query_sequence, self.sirna_size)
+            self.sirna_file, self.tab_file_name = self.create_sirnas(query_sequence, self.sirna_size)
 
             # Run BOWTIE against DB
-            bowtie_data = self.run_bowtie(sirna_file, self.bowtie_db, self.mismatches)
+            bowtie_data = self.run_bowtie(self.sirna_file, self.bowtie_db, self.mismatches)
             self.bowtie_data_l = self.bowtie_to_lst(bowtie_data)
 
             # Run RNAplfold
-            lunp_data = self.run_rnaplfold(query_name, query_seq_temp_file)
-
+            self.lunp_data = self.run_rnaplfold(self.query_name, query_seq_temp_file)
             return self.bowtie_data_l
 
 
-    def process_data(self):
-        # Design mode
-        if self.mode == 0:
-            # Get main targets
-            main_targets = self.get_main_target()
-            if main_targets == None:
-                # We still want to see an efficiency plot, even without hits
-                no_target = True
-            else:
-                no_target = False
-        # Off target mode, we don't need main targets
-        else:
-            main_targets = None
-
+    def process_data(self, target):
 
         self.sirna_l = []
-        f_in = open(tab_file_name, 'r')
+        f_in = open(self.tab_file_name, 'r')
         sirna_data = f_in.readlines()
         for x in sirna_data:
             x = x.split('\t')
             self.sirna_l.append(x)
-
-        sirna_sequence_n2 = self.sirna_l
 
         # In case we get hits to DB
         if self.bowtie_data_l:
@@ -116,83 +100,31 @@ class SifiPipeline(object):
             input_data = self.bowtie_data_l
             no_target = False
 
-
         # No hits to DB, off-target plot will be not shown, design plot only show efficient sirnas
         else:
             # Design mode with no hits, we show only efficient siRNAs
-            if self.mode == 0:
-                f_in = open(tab_file_name, 'r')
-                sirna_data = f_in.readlines()
-                l = []
-                for x in sirna_data:
-                    x = x.split('\t')
-                    l.append(x)
-                input_data = l
-                f_in.close()
-                no_target = True
-            else:
-                # Off target mode without hits, no plot
-                input_data = None
+ 
+            f_in = open(self.tab_file_name, 'r')
+            sirna_data = f_in.readlines()
+            input_data = []
+            for x in sirna_data:
+                x = x.split('\t')
+                l.append(x)
+            f_in.close()
+            no_target = True
 
-        if main_targets == "Canceled":
-            return None, None, None, None, None, 'Canceled by user.'
+
+        if input_data:
+
+            temp_json_file = tempfile.mkstemp()
+            out_file = open(temp_json_file[1] + '.json', "w")
+            json_lst = self.data_to_json(self.query_name, input_data, no_target, self.lunp_data, target)
+            json.dump(json_lst, out_file, indent=4)
+            out_file.close()
+            table_data = general_helpers.get_table_data(temp_json_file[1] + '.json')
+            return table_data, json_lst
         else:
-            if input_data:
-                # Json temp
-                temp_json_file = tempfile.mkstemp()
-                out_file = open(temp_json_file[1] + '.json', "w")
-                json_lst = self.data_to_json(query_name, input_data, no_target, lunp_data, main_targets)
-                json.dump(json_lst, out_file, indent=4)
-                out_file.close()
-
-                if json_lst:
-                    sifi_data = open(temp_json_file[1] + '.json', "r").read()
-                    table_data = general_helpers.get_table_data(temp_json_file[1] + '.json')
-                    # for x in table_data:
-                    #     print (x[0], x[1], x[2])
-                    # plot = show_plot.DrawPlot(self.sirna_size, query_sequence, sifi_data, None, None,
-                    #                         self.temp_location, None, main_targets,
-                    #                         temp_json_file[1] + '.json', self.mode, table_data)
-                    # print('figure is ready to show!')
-                    # print(type(plot))
-                    sifi_data = json.loads(sifi_data)
-                    print(sifi_data)
-
-                    
-
-                    def GetGC(Seqence):
-                        GC_number = 0
-                        for i in Seqence:
-                            if i.upper() in ['G', 'C']:
-                                GC_number += 1
-                        return str((GC_number/21)*100)+"%"
-
-                    with open(settings.saveLocation,'w') as f:
-                        f.write('sequence' + '\t' +'start positon' + '\t' + 'GC content' + '\t'+ 'score' + '\n')
-                        for sirna in sifi_data:
-                            if 1:
-                                sirna_start = sirna["sirna_position"]
-                                sirna_seq = sirna["sirna_sequence"]
-                                GC_content = GetGC(sirna_seq)
-                                score = sirna["accessibility_value"]
-                                f.write(str(sirna_seq) + '\t' +str(sirna_start) + '\t' + str(GC_content) + '\t'+ str(score) + '\n')
-                        f.close()
-
-                    #plot.show()
-
-                    # if self.mode == 0:
-                    #     temp_img_file, off_target_dict, main_target_dict = plot.plot_design()
-                    # else:
-                    #     temp_img_file, table_data = plot.plot_offtarget()
-                    #     # Only for design
-                    #     main_target_dict = None
-                    #     off_target_dict = None
-            #     else:
-            #         return None, None, None, None, None, 'No targets found. Please make sure that the query and/or database sequences are in correct orientation.'
-            #     return temp_img_file, temp_json_file[1] + '.json', table_data, main_target_dict, off_target_dict, None
-            # else:
-            #     return None, None, None, None, None, 'No targets found. Please make sure that the query and/or database sequences are in correct orientation'
-            return None, None, None, None, None, '分析完成.'
+            return list()
 
 
     def bowtie_to_lst(self, bowtie_data):
@@ -226,7 +158,7 @@ class SifiPipeline(object):
                 missmatches = data_split[7]
 
                 if self.mode == 0:
-                    if hit_name in main_targets:
+                    if hit_name == main_targets:
                         off_target = False
                     else:
                         off_target = True
@@ -245,7 +177,7 @@ class SifiPipeline(object):
                 missmatches = None
 
             if strand == '+':
-                print ('ok')
+
                 # We need the antisense siRNA (c_seq) for the energy
                 # Antisense sequence = sequence position - 2
                 # First two siRNas are ignored
@@ -259,21 +191,6 @@ class SifiPipeline(object):
                     sirna_sequence_n2 = None
                 else:
                     sirna_sequence_n2 = self.sirna_l[query_position-3][1].strip()
-            #else:
-                #sirna_sequence_n2 = None
-
-                # query_position = self.len_seq - query_position - self.sirna_size + 2
-                # print query_position, self.len_seq - self.sirna_size
-                #
-                # if query_position > self.len_seq - self.sirna_size - 3:
-                #     sirna_sequence_n2 = None
-                # else:
-                #     s = sirna_sequence
-                #     sirna_sequence_n2 = Seq(s)
-                #     sirna_sequence_n2 = str(sirna_sequence_n2.reverse_complement())
-                #     sirna_sequence = self.sirna_l[query_position+3][1].strip()
-
-            # print sirna_name, sirna_sequence_n2, sirna_sequence, query_position
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
 
@@ -291,20 +208,6 @@ class SifiPipeline(object):
                 json_lst.append(json_dict)
 
         return json_lst
-
-    def get_main_target(self):
-        """ The user must choose the main targets from all bowtie hit names.
-           All remaining hits will be marked as off-targets."""
-
-        # Get all hit names and number of hits
-        all_targets = Counter(player[2] for player in self.bowtie_data_l)
-        # Open popup to choose main target
-        lb = popup.ListSelection(sorted(all_targets.items(), key=lambda x: x[1], reverse=True))
-        if lb.exec_():
-            main_targets = lb.get_seletced(sorted(all_targets.items(), key=lambda x: x[1], reverse=True))
-            return main_targets
-        else:
-            return "Canceled"
 
     def create_sirnas(self, query_sequence, sirna_size):
         """Create siRNA's of size "sirna_size" of a sequence.
@@ -532,8 +435,6 @@ class SifiPipeline(object):
 
         return is_efficient
 
-
-
     def calculate_efficiency(self, sirna_sequence, sirna_sequence_n2, lunp_data_xmer):
         """"""
         is_efficient = None
@@ -582,4 +483,3 @@ class SifiPipeline(object):
                 else:
                     is_efficient = False
         return is_efficient, strand_selection, end_stability, target_site_accessibility, thermo_effcicient
-        #print sirna_sequence, strand_selection, end_stability, target_site_accessibility, thermo_effcicient, is_efficient

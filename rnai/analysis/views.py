@@ -6,6 +6,8 @@ import json
 from analysis import database_helpers
 from analysis import  pipeline
 from analysis import general_helpers
+
+
 @csrf_exempt
 def create_database(request):
 	if request.method == 'POST':
@@ -43,6 +45,7 @@ bowtie_location
 @csrf_exempt
 def run_pipeline(request):
 
+	global sifi
 	order = dict()
 	response = dict()
 	sequence_temp_file = ''
@@ -65,7 +68,7 @@ def run_pipeline(request):
 	else:
 		sequence_temp_file = False
 		print('Please enter a valid nucleic acid sequence!')
-
+	print(order)
 	if sequence_temp_file:
 		sifi = pipeline.SifiPipeline(order['database'], sequence_temp_file, order['siRNA_size'],\
 		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], order['rnaplfold_location'],\
@@ -75,3 +78,15 @@ def run_pipeline(request):
 		result = sifi.run_pipeline()
 		response['align_data'] = result
 	return JsonResponse(response)
+
+@csrf_exempt
+def process_data(request):
+
+	response = dict()
+	if request.method == 'POST':
+		order = json.loads(request.body)
+		target = order['target']
+		table_data, json_lst = sifi.process_data(target)
+		response['table_data'] = table_data
+		response['json_lst']   = json_lst
+	return JsonResponse(response, safe=False)
