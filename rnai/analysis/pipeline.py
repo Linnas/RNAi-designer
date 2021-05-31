@@ -122,10 +122,32 @@ class SifiPipeline(object):
             json.dump(json_lst, out_file, indent=4)
             out_file.close()
             table_data = general_helpers.get_table_data(temp_json_file[1] + '.json')
-            return table_data, json_lst
-        else:
-            return list()
 
+        off_target_dict, main_target_dict, efficient_dict, main_hits_histo = general_helpers.get_target_data(temp_json_file[1] + '.json', self.sirna_size)
+
+        # Off-target position list
+        off_targets_pos = set()
+        for i in off_target_dict.values():
+            off_targets_pos = off_targets_pos | i
+
+        # Main-target position list
+        main_targets_plot = set()
+        for i in main_target_dict.values():
+            main_targets_plot = main_targets_plot | i
+
+        # Efficient position list
+        eff_sirna_plot = []
+        for i in efficient_dict.values():
+            eff_sirna_plot.extend(i)
+        eff_sirna_plot.sort()
+
+        # Draw efficiency plot
+        eff_sirna_histo = np.bincount(eff_sirna_plot, minlength=self.len_seq)
+
+        # Draw main target histogram
+        main_histo = np.bincount(main_hits_histo, minlength=self.len_seq)
+
+        return table_data, json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
 
     def bowtie_to_lst(self, bowtie_data):
         """Converts Bowtie data into lists of list. Just for convenience."""

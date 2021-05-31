@@ -86,7 +86,9 @@ def process_data(request):
 	if request.method == 'POST':
 		order = json.loads(request.body)
 		target = order['target']
-		table_data, json_lst = sifi.process_data(target)
-		response['table_data'] = table_data
-		response['json_lst']   = json_lst
+		table_data, json_lst, eff_sirna_plot, main_histo = sifi.process_data(target)
+		response['table_data']     = table_data
+		response['json_lst']       = json_lst
+		response['eff_sirna_plot'] = eff_sirna_plot
+		response['main_histo']     = main_histo
 	return JsonResponse(response, safe=False)
