@@ -216,12 +216,14 @@ class SifiPipeline(object):
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
 
-                is_efficient, strand_selection, end_stability, target_site_accessibility, thermo_effcicient = self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
-
+                is_efficient, strand_selection, end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery, target_site_accessibility, thermo_effcicient = self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
+                delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
                 json_dict = {"query_name": query_name, "sirna_name":sirna_name,
                              "sirna_position": query_position, "sirna_sequence": sirna_sequence,
                              "is_efficient": is_efficient,
                              "strand_selection": strand_selection, "end_stability": end_stability,
+                             "sense5_MFE_enegery": sense5_MFE_enegery, "anti_sense5_MFE_enegery": anti_sense5_MFE_enegery,
+                             "delta_MFE_enegery": delta_MEF_enegery,
                              "target_site_accessibility": target_site_accessibility,
                              "accessibility_value": lunp_data_xmer, "is_off_target": off_target,
                              "hit_name": hit_name, "reference_strand_pos":reference_strand_pos,
@@ -396,7 +398,7 @@ class SifiPipeline(object):
             end_stability = True
         else:
             end_stability = False
-        return end_stability
+        return end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery
 
     def pair_probability(self, lunp_data_xmer):
         """Calculates whether the pair probability the siRNA at a certain window (default 8) is higher or equal
@@ -465,11 +467,13 @@ class SifiPipeline(object):
             is_efficient = False
             strand_selection = None
             end_stability = None
+            sense5_MFE_enegery = None
+            anti_sense5_MFE_enegery = None
             target_site_accessibility = None
             thermo_effcicient = None
         else:
             strand_selection = self.strand_selection(sirna_sequence, sirna_sequence_n2)
-            end_stability = self.end_stability(sirna_sequence, sirna_sequence_n2)
+            end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery = self.end_stability(sirna_sequence, sirna_sequence_n2)
             target_site_accessibility = self.pair_probability(lunp_data_xmer)
             thermo_effcicient = self.check_efficient(strand_selection, end_stability, target_site_accessibility)
 
@@ -504,4 +508,4 @@ class SifiPipeline(object):
                     is_efficient = True
                 else:
                     is_efficient = False
-        return is_efficient, strand_selection, end_stability, target_site_accessibility, thermo_effcicient
+        return is_efficient, strand_selection, end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery, target_site_accessibility, thermo_effcicient

@@ -6,8 +6,9 @@ import actions from './actions'
 Vue.use(Vuex)
 
 const state = {
-	databases:[],
-  alignData:[]
+	databases:['hg19', 'hg19_refMrna'],
+  alignData:[],
+  plot_data:[]
 }
 
 export default new Vuex.Store({

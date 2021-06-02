@@ -1,5 +1,5 @@
 <template>
-   <v-container>
+   <v-container style="max-width:1385px !important">
       <v-row class="d-flex justify-center">
          <v-col cols="12">
              <v-data-table
@@ -12,10 +12,10 @@
          <v-col>
             <v-spacer></v-spacer>
             <v-btn @click="backHome" class="mr-2">Return</v-btn>
-            <v-btn @click="chooseTarget">Targets</v-btn>
+            <v-btn @click="save" class="mr-2">Save</v-btn>
          </v-col>
       </v-row>
-      <v-dialog
+<!--       <v-dialog
          v-model="dialog"
          persistent
          max-width="600px">
@@ -42,7 +42,7 @@
             
             </v-card-actions>
          </v-card>
-      </v-dialog>
+      </v-dialog> -->
    </v-container>
 </template>
 <script>
@@ -50,68 +50,58 @@ export default {
    name: 'Tabular',
    data: () => ({
       reads: null,
-      targets:[],
-      target:null,
       dialog:false,
       headers:[{
-         text: 'Read Name',
-         value: 'name'
+         text: 'Position',
+         value: 'sirna_position'
        }, {
-         text: 'Reference strand',
-         value: 'strand'
+         text: 'Sequence',
+         value: 'sirna_sequence'
        }, {
-         text: 'Reference Name',
-         value: 'rname'
+         text: 'Efficiency',
+         value: 'is_efficient'
        }, {
-         text: 'Offset',
-         value: 'offset'
+         text:'Strand selection',
+         value: 'strand_selection'
        }, {
-         text: 'Read sequence',
-         value: 'sequence'
+         text:'Accessibility',
+         value: 'accessibility_value'
        }, {
-         text: 'Same Align',
-         value:'total'
+         text:'End stability',
+         value: 'end_stability'
        }, {
-         text:'mismatch',
-         value: 'mismatch'
-       }],
+         text:'Off target',
+         value:'is_off_target'
+       }, {
+         text:'Antisense MFE',
+         value:'anti_sense5_MFE_enegery'
+       }, {
+         text:'Sense MFE',
+         value:'sense5_MFE_enegery'
+       }, {
+         text:'Delta MFE',
+         value:'delta_MFE_enegery'
+       }, {
+         text:'Ref strand position',
+         value:'reference_strand_pos'
+       }, {
+         text:'Target site accessibility',
+         value:'target_site_accessibility'
+       }, {
+         text:'Thermo efficient',
+         value:'thermo_effcicient'
+       }]
    }),
    created() {
-      var align_data = this.$store.state.alignData;
-      this.reads = align_data.map( function(r){
-         return {
-           name: r[0],
-           strand: r[1],
-           rname: r[2],
-           offset: r[3],
-           sequence: r[4],
-           total: r[6],
-           mismatch: r[7]
-         }
-       });
+      var plot_data = this.$store.state.plot_data;
+      this.reads = plot_data
    },
    methods:{
       backHome() {
-         this.$router.push('/')
+         this.$router.push('/tabular')
       },
-      chooseTarget() {
-         var align_data = this.$store.state.alignData;
-         var hit_targets =  align_data[0].map((_, colIndex) => align_data.map(r => r[colIndex]))
-         var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
-         this.targets = [...new Set(hit_targets[2])].sort(collator.compare);
-         this.dialog = true
-      },
-      checkTarget() {
-         var query = {
-            target: this.target
-         };
-         this.axios.post('http://localhost:8000/analysis/process_data', query).then(res => {
-            console.log(res.data)
-            this.loading = false;
-            var plot_data = res.data.json_lst;
-            this.$store.state.plot_data = plot_data;
-            this.$router.push({ name: 'plotData'})
-         })
+      save() {
+
       }
    }
    

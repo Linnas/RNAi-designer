@@ -6,7 +6,7 @@
           :items="databases"
           label="Databases"
           solo
-          :value='database'
+          v-model="database"
         ></v-select>
         <v-text-field
           v-model.number="siRNA_size"
@@ -107,7 +107,7 @@ export default {
     startPipeline() {
       this.loading = true;
       var no_efficience = true;
-      const { siRNA_size, mismatch, sequences, items } = this;
+      const { siRNA_size, mismatch, sequences, database, items } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
           no_efficience = false
       const query = {
@@ -119,9 +119,9 @@ export default {
         accessibility_check:items[3].status,
         target_site_accessibility_treshold:items[3].value,
         accessibility_window:items[4].value,
-        database:'hg19',
-        bowtie_location:'C:/Users/sirius/Desktop/rnai/Bowtie/',
-        rnaplfold_location:'C:/Users/sirius/Desktop/rnai/RNAplfold/',
+        database,
+        bowtie_location:'C:/Users/AORUS/Desktop/RNAi-designer/Bowtie/',
+        rnaplfold_location:'C:/Users/AORUS/Desktop/RNAi-designer/RNAplfold/',
         no_efficience,
 
       }
