@@ -1,8 +1,8 @@
 <template>
   <v-dialog
     v-model="dialog"
-    persistent
-    max-width="600px"
+    max-width="800px"
+    class="height:600px"
   >
     <template v-slot:activator="{ on, attrs }">
       <v-btn
@@ -14,13 +14,32 @@
         <div>Databases</div>
       </v-btn>
     </template>
-    <v-card>
-      <v-card-title>
-        <span class="headline">Databases management</span>
-      </v-card-title>
-      <v-card-text>
+    <v-card height="50vh">
+      <v-toolbar
+      flat
+      >
+        <v-toolbar-title class="font-weight-bold">Database Management</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn text class="mr-6">
+          <v-icon color="primary">mdi-plus</v-icon>
+          <span class="ml-2">Add</span>
+        </v-btn>
+        <v-btn text class="mr-6" @click="removeDatabase(database)">
+          <v-icon color="primary">mdi-trash-can-outline</v-icon>
+          <span class="ml-2">Delete</span>
+        </v-btn>
+        <v-btn text class="mr-6">
+          <v-icon color="primary">mdi-share-outline</v-icon>
+          <span class="ml-2">Share</span>
+        </v-btn>
+        <v-divider vertical inset></v-divider>
+        <v-btn icon @click="dialog = false" class="ml-2">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-toolbar>
+      <v-card-text class="mt-6">
         <v-list>
-          <v-list-item-title>
+          <!-- <v-list-item-title>
             <v-text-field
               label=""
               class="ma-4"
@@ -43,32 +62,37 @@
              </template>
             </v-text-field>
 
-          </v-list-item-title>
-          <v-divider></v-divider>
-          <v-row>
-            <v-col>Name</v-col>
-            <v-col>Size</v-col>
-            <v-col>Modified</v-col>
-            <v-col>Description</v-col>
+          </v-list-item-title> -->
+          <v-row class="mb-2">
+            <v-col class="font-weight-black" cols="4">Name</v-col>
+            <v-col class="font-weight-black" cols="4">Last Modified</v-col>
+            <v-col class="font-weight-black" cols="2">Size</v-col>
+            <v-col class="font-weight-black" cols="2">Type</v-col>
           </v-row>
           <v-divider></v-divider>
           <template v-for="database in databases">
-            <v-divider class="ma-0" :key="`${database.uid}-divider`"></v-divider>
             <v-list-item style="height:52px" :key="database.uid">
+              <template v-slot:default="{ active, }">
+                <v-list-item-action>
+                  <v-checkbox
+                    :input-value="active"
+                    color="primary"
+                  ></v-checkbox>
+                </v-list-item-action>
+
+                <v-list-item-content>
+                  <v-list-item-title>Notifications</v-list-item-title>
+                  <v-list-item-subtitle>Allow notifications</v-list-item-subtitle>
+                </v-list-item-content>
+              </template>
               <v-list-item-action>
                 <v-icon color="primary" v-if="database.edit">mdi-pencil</v-icon>
               </v-list-item-action>
-              <template v-if="!database.edit">
+              <v-list-item-content v-if="!database.edit">
                 <v-list-item-title
-                  class="amber--text"
                   @dblclick="toggleEdit({database, edit:true})"
                 >{{ database.text }}</v-list-item-title>
-                <v-list-item-action class="d-inline">
-                  <v-btn @click="removeDatabase(database)" color="red lighten-3" text icon class="mr-8">
-                    <v-icon>mdi-trash-can-outline</v-icon>
-                  </v-btn>
-                </v-list-item-action>
-              </template>
+              </v-list-item-content>
               <v-text-field
                 :value="database.text"
                 @blur="doneEdit"
@@ -88,24 +112,6 @@
           </template>           
         </v-list>
       </v-card-text>
-        
-      <!-- <v-card-actions>
-        <v-btn
-          @click="createDatabase()"
-          primary
-        >
-          <v-icon>mdi-plus</v-icon>
-          <div>New</div>
-        </v-btn>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="blue darken-1"
-          text
-          @click="dialog = false"
-        >
-          Close
-        </v-btn>
-      </v-card-actions> -->
     </v-card>
   </v-dialog>
 </template>
@@ -183,5 +189,8 @@ export default {
 <style>
 .todo-item .v-input__slot {
   padding: 0 !important;
+}
+.v-btn {
+  text-transform: capitalize !important;
 }
 </style>
