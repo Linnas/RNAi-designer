@@ -7,6 +7,7 @@ const path = require('path')
 const os = require('os')
 const isDevelopment   = process.env.NODE_ENV !== 'production'
 const vueDevToolsPath = path.join(os.homedir(), '/AppData/Local/Google/Chrome/User Data/Default/Extensions/nhdogjmejiglipccpnnnanhbledajbpd/5.3.4_0')
+const appPath         = app.getAppPath()
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -54,6 +55,9 @@ ipcMain.handle('create-database', (event) =>
 
 )
 
+ipcMain.handle('getAppPath', e => path.dirname(appPath)
+
+)
       
 
 

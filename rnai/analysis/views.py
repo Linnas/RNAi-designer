@@ -12,12 +12,11 @@ from analysis import general_helpers
 def create_database(request):
 	if request.method == 'POST':
 		order = json.loads(request.body)
-		db_name = order['db_name']
-		database_file_location  = order['index_database_location']
-		db_location = order['built_database_location']
-		bowtie_location = order['bowtie_location']
+		db_name = order['text']
+		database_file_location  = order['path']
+		bowtie_location = order['loc']
 
-	info_message, bowtie_path = database_helpers.create_bowtie_database(db_name,database_file_location,db_location,bowtie_location)
+	info_message, bowtie_path = database_helpers.create_bowtie_database(db_name,database_file_location,bowtie_location)
 	response = dict()
 	if bowtie_path:
 		response['msg'] = info_message

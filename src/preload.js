@@ -3,6 +3,7 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     createDatabase: () => ipcRenderer.invoke('create-database'),
+    getAppPath: () => ipcRenderer.invoke('getAppPath'),
     openExternal: (url) => shell.openExternal(url)
   }
 )

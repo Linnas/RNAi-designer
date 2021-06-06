@@ -32,19 +32,15 @@ def get_size_date_of_file(db_file):
     return file_date, int(file_size)
 
 
-def create_bowtie_database(db_name, database_file_location, db_location, bowtie_location):
+def create_bowtie_database(db_name, database_file_location, bowtie_location):
     """Creates a Bowtie DB."""
 
-    assert isinstance(database_file_location, str)
-    assert isinstance(db_name, str)
-    assert isinstance(db_location, str)
-    assert isinstance(bowtie_location, str)
-
     os.chdir(bowtie_location)
-    process = subprocess.Popen(["bowtie-build", database_file_location, db_location + str(db_name)])
+    print(os.getcwd())
+    process = subprocess.Popen(["bowtie-build-s", database_file_location, str(db_name)])
     process.wait()
 
-    if os.path.exists(db_location + str(db_name) + ".rev.1.ebwt"):
+    if os.path.exists(bowtie_location + str(db_name) + ".rev.1.ebwt"):
         return "Database successfully created!", True
     else:
         logging.debug(time.strftime("%d.%m.%Y um %H:%M:%S Uhr"))

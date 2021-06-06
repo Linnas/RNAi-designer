@@ -9,6 +9,9 @@ import vuetify from './plugins/vuetify'
 Vue.config.productionTip = false
 Vue.use(VueAxios, Axios)
 
+Object.defineProperty(Vue.prototype, '$localServer', { value: 'http://127.0.0.1:8000/analysis/' })
+
+
 new Vue({
   vuetify,
   store,

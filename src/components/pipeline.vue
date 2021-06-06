@@ -8,14 +8,65 @@
           solo
           v-model="database"
         ></v-select>
-        <v-text-field
-          v-model.number="siRNA_size"
-          label="siRNA size"
-        ></v-text-field>
-        <v-text-field
-          v-model.number="mismatch"
-          label="Mismatch"
-        ></v-text-field>
+        <v-row>
+          <v-col>
+            <v-text-field
+              v-model.number="siRNA_size"
+              label="siRNA size"
+            ></v-text-field>
+        </v-col>
+          <v-col>
+            <v-text-field
+              v-model.number="mismatch"
+              label="Mismatch"
+            ></v-text-field>
+        </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="4">
+            <div>GC content range:</div>
+          </v-col>
+          <v-col cols="2">
+            <v-text-field
+              :value="range[0]"
+              hide-details
+              single-line
+              type="number"
+              suffix="%"
+              class="my-0 py-0"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="1">
+            <div class="d-flex justify-center">---</div>
+          </v-col>
+          <v-col cols="2">
+            <v-text-field
+                :value="range[1]"
+                hide-details
+                single-line
+                type="number"
+                suffix="%"
+                class="mt-0 pt-0"
+              ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="5">
+            <div>Avoid contiguous G's or C's</div>
+          </v-col>
+          <v-col cols="2">
+            <v-text-field
+              :value="consecutive"
+              hide-details
+              single-line
+              type="number"
+              class="mt-0 pt-0"
+            ></v-text-field>
+          </v-col>
+          <v-col>
+            <div>nt or more</div>
+          </v-col>
+        </v-row>
       </v-col>
 
       <v-col cols="4">
@@ -69,7 +120,12 @@ export default {
     mismatch:0,
     sequences:'',
     database:'',
+    range:[40, 60],
+    consecutive:4,
     reads:[],
+    bowtie_location:null,
+    rnaplfold_location:null,
+    appPath: null,
     loading: false,
     items:[{
       status:true,
@@ -96,6 +152,13 @@ export default {
       "databases"
     ])
   },
+  created() {
+    window.electron.getAppPath().then(res => {
+      this.bowtie_location = res+'\\Bowtie';
+      this.rnaplfold_location = res + '\\RNAplfold';
+    });
+    
+  },
   filters: {
     trimSequence: function(value){
       if (!value) return ''
@@ -107,7 +170,7 @@ export default {
     startPipeline() {
       this.loading = true;
       var no_efficience = true;
-      const { siRNA_size, mismatch, sequences, database, items } = this;
+      const { siRNA_size, mismatch, sequences, database, items, bowtie_location, rnaplfold_location } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
           no_efficience = false
       const query = {
@@ -120,13 +183,13 @@ export default {
         target_site_accessibility_treshold:items[3].value,
         accessibility_window:items[4].value,
         database,
-        bowtie_location:'C:/Users/AORUS/Desktop/RNAi-designer/Bowtie/',
-        rnaplfold_location:'C:/Users/AORUS/Desktop/RNAi-designer/RNAplfold/',
+        bowtie_location,
+        rnaplfold_location,
         no_efficience,
 
       }
       console.log(query)
-      this.axios.post('http://localhost:8000/analysis/run_pipeline', query).then((res) => {
+      this.axios.post(this.$localServer + 'run_pipeline', query).then((res) => {
         console.log(res.data);
         this.loading = false;
         var align_data = res.data.align_data;

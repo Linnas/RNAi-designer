@@ -18,7 +18,40 @@
       <v-card-title>
         <span class="headline">Databases management</span>
       </v-card-title>
+      <v-card-text>
         <v-list>
+          <v-list-item-title>
+            <v-text-field
+              label=""
+              class="ma-4"
+              @keydown.enter="createDatabase"
+              autocomplete="off"
+              clearable
+              color="rgb(40, 85, 163)"
+              solo
+              dense
+              light
+              max-width="400px"
+              hide-details
+              maxlength="1023"
+              v-model="db_name"
+            >
+             <template v-slot:append>
+              <v-btn icon @click="createDatabase">
+                <v-icon>mdi-plus</v-icon>
+              </v-btn>
+             </template>
+            </v-text-field>
+
+          </v-list-item-title>
+          <v-divider></v-divider>
+          <v-row>
+            <v-col>Name</v-col>
+            <v-col>Size</v-col>
+            <v-col>Modified</v-col>
+            <v-col>Description</v-col>
+          </v-row>
+          <v-divider></v-divider>
           <template v-for="database in databases">
             <v-divider class="ma-0" :key="`${database.uid}-divider`"></v-divider>
             <v-list-item style="height:52px" :key="database.uid">
@@ -54,7 +87,9 @@
           </v-list-item>
           </template>           
         </v-list>
-      <v-card-actions>
+      </v-card-text>
+        
+      <!-- <v-card-actions>
         <v-btn
           @click="createDatabase()"
           primary
@@ -70,7 +105,7 @@
         >
           Close
         </v-btn>
-      </v-card-actions>
+      </v-card-actions> -->
     </v-card>
   </v-dialog>
 </template>
@@ -80,7 +115,8 @@ export default {
   name: 'databaseDialog',
   data() {
     return {
-      dialog:false
+      dialog:false,
+      db_name:''
     };
   },
   directives: {
@@ -102,18 +138,25 @@ export default {
   methods: {
     ...mapActions(["addDatabase", "removeDatabase", "editDatabase", "toggleEdit"]),
     createDatabase() {
-    window.electron.createDatabase().then(res => {
-      console.log(res)
-      if(res.canceled) {
-        return
-      } else {
-        let path = res.filePaths[0]
-        this.addDatabase({
-        text:path,
-        size:'20Mb'
-      })
+      const text = this.db_name.trim()
+      const Bowtie_location = this.$Bowtie_location
+      if(text) {
+        window.electron.createDatabase().then(res => {
+          console.log(res)
+          if(res.canceled) {
+            return
+          } else {
+            let path = res.filePaths[0]
+            this.addDatabase({
+            path,
+            text,
+            loc:Bowtie_location,
+            size:'20Mb'
+          })
+          }
+        })
       }
-    })
+      
     },
     doneEdit(e) {
       const value = e.target.value.trim();
