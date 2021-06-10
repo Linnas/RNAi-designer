@@ -38,79 +38,19 @@
         </v-btn>
       </v-toolbar>
       <v-card-text class="mt-6">
-        <v-list>
-          <!-- <v-list-item-title>
-            <v-text-field
-              label=""
-              class="ma-4"
-              @keydown.enter="createDatabase"
-              autocomplete="off"
-              clearable
-              color="rgb(40, 85, 163)"
-              solo
-              dense
-              light
-              max-width="400px"
-              hide-details
-              maxlength="1023"
-              v-model="db_name"
-            >
-             <template v-slot:append>
-              <v-btn icon @click="createDatabase">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-             </template>
-            </v-text-field>
-
-          </v-list-item-title> -->
-          <v-row class="mb-2">
-            <v-col class="font-weight-black" cols="4">Name</v-col>
-            <v-col class="font-weight-black" cols="4">Last Modified</v-col>
-            <v-col class="font-weight-black" cols="2">Size</v-col>
-            <v-col class="font-weight-black" cols="2">Type</v-col>
-          </v-row>
-          <v-divider></v-divider>
-          <template v-for="database in databases">
-            <v-list-item style="height:52px" :key="database.uid">
-              <template v-slot:default="{ active, }">
-                <v-list-item-action>
-                  <v-checkbox
-                    :input-value="active"
-                    color="primary"
-                  ></v-checkbox>
-                </v-list-item-action>
-
-                <v-list-item-content>
-                  <v-list-item-title>Notifications</v-list-item-title>
-                  <v-list-item-subtitle>Allow notifications</v-list-item-subtitle>
-                </v-list-item-content>
-              </template>
-              <v-list-item-action>
-                <v-icon color="primary" v-if="database.edit">mdi-pencil</v-icon>
-              </v-list-item-action>
-              <v-list-item-content v-if="!database.edit">
-                <v-list-item-title
-                  @dblclick="toggleEdit({database, edit:true})"
-                >{{ database.text }}</v-list-item-title>
-              </v-list-item-content>
-              <v-text-field
-                :value="database.text"
-                @blur="doneEdit"
-                @keyup.enter="doneEdit"
-                @keyup.esc="cancelEdit"
-                clearable
-                color="#fff"
-                flat
-                hide-details
-                counter="1023"
-                ref="input"
-                solo
-                v-else
-                v-focus="database.edit"
-              ></v-text-field>
-          </v-list-item>
-          </template>           
-        </v-list>
+          <v-data-table
+            v-model="selected"
+            :headers="headers"
+            :items="databases"
+            single-select
+            item-key="text"
+            show-select
+             hide-default-footer
+            disable-pagination
+            disable-sort
+            class="elevation-1"
+          >
+        </v-data-table>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -122,25 +62,48 @@ export default {
   data() {
     return {
       dialog:false,
-      db_name:''
+      db_name:'',
+      selected:[],
+      headers:[{
+        text:'Name',
+        value:'text',
+      },{
+        text:'Last Modified',
+        value:'time'
+      },{
+        text:'Size(MB)',
+        value:'size'
+      },{
+        text:'Type',
+        value:'type'
+      }]
     };
   },
-  directives: {
-    focus(el, { value }, { context }) {
-      if (value) {
-        context.$nextTick(() => {
-          context.$refs.input[0].focus();
-        });
-      }
-    }
-  },
+  // directives: {
+  //   focus(el, { value }, { context }) {
+  //     if (value) {
+  //       context.$nextTick(() => {
+  //         context.$refs.input[0].focus();
+  //       });
+  //     }
+  //   }
+  // },
   created() {
+    this.axios.get(this.$localServer + 'getAllDatabasesInfo').then(res => {
+      const val = Object.values(res.data)
+      const keys = Object.keys(res.data)
+      const values = val[0].map((_, colIdx) => val.map(row => row[colIdx]))
+      const dbs = values.map(arr => Object.fromEntries(keys.map((_, i) => [keys[i], arr[i]])))
+      console.log(dbs);
+      dbs.forEach(db => this.$store.commit('addDatabase', db));
+    })
   },
   computed: {
     ...mapState([
       "databases"
       ]),
   },
+
   methods: {
     ...mapActions(["addDatabase", "removeDatabase", "editDatabase", "toggleEdit"]),
     createDatabase() {

@@ -7,6 +7,11 @@ from analysis import database_helpers
 from analysis import  pipeline
 from analysis import general_helpers
 
+from django.conf import settings
+from os import path
+
+rnaplfold_location = path.join(settings.BASE_DIR, 'RNAplfold')
+bowtie_location    = path.join(settings.BASE_DIR, 'Bowtie')
 
 @csrf_exempt
 def create_database(request):
@@ -14,7 +19,6 @@ def create_database(request):
 		order = json.loads(request.body)
 		db_name = order['text']
 		database_file_location  = order['path']
-		bowtie_location = order['loc']
 
 	info_message, bowtie_path = database_helpers.create_bowtie_database(db_name,database_file_location,bowtie_location)
 	response = dict()
@@ -23,24 +27,13 @@ def create_database(request):
 	else:
 		response['msg'] = 'Failed to build database from sequences.'
 	return JsonResponse(response)
+	
 @csrf_exempt
 def get_all_databases_info(request):
 
-	db_location = ''
-	if request.method == 'POST':
-		order = json.loads(request.body)
-		db_location = order['db_location']
-
-	response = database_helpers.all_dbs(db_location)
+	response = database_helpers.all_dbs(bowtie_location)
 	return JsonResponse(response)
 
-'''
-
-
-rnaplfold_location
-bowtie_location
-
-'''
 @csrf_exempt
 def run_pipeline(request):
 
@@ -67,11 +60,11 @@ def run_pipeline(request):
 	else:
 		sequence_temp_file = False
 		print('Please enter a valid nucleic acid sequence!')
-	print(order)
+
 	if sequence_temp_file:
 		sifi = pipeline.SifiPipeline(order['database'], sequence_temp_file, order['siRNA_size'],\
-		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], order['rnaplfold_location'],\
-		  order['bowtie_location'], order['strand_check'], order['end_check'], order['end_stability_treshold'],\
+		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], rnaplfold_location,\
+		  bowtie_location, order['strand_check'], order['end_check'], order['end_stability_treshold'],\
 		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'])
 		
 		result = sifi.run_pipeline()

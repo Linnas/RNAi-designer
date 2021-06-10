@@ -6,7 +6,7 @@ import actions from './actions'
 Vue.use(Vuex)
 
 const state = {
-	databases:['hg19_RefMrna'],
+	databases:[],
   alignData:[],
   plot_data:[]
 }

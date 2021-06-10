@@ -284,7 +284,7 @@ class SifiPipeline(object):
         temp_bowtie_file = tempfile.mkstemp()
         os.chdir(self.bowtie_location)
         print(temp_bowtie_file[1])
-        process = subprocess.Popen(["bowtie-align-s", "-a", "-v", str(mismatches),  "-y",
+        process = subprocess.Popen(["bowtie", "-a", "-v", str(mismatches),  "-y",
                                     "-x", database_name, "-f",
                                     sequence, temp_bowtie_file[1]])
         process.wait()

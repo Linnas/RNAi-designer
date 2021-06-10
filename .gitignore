@@ -1,8 +1,8 @@
 .DS_Store
 node_modules
 /dist
-/Bowtie
-/RNAplfold
+/rnai/Bowtie
+/rnai/RNAplfold
 
 # local env files
 .env.local

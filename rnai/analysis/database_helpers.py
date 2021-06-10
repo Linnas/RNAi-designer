@@ -1,5 +1,6 @@
 import subprocess
 import time
+import datetime
 import os
 import logging
 import platform
@@ -9,25 +10,24 @@ from types import *
 def all_dbs(db_location):
     """Get a dictionary of all Bowtie DBs created so far by the user."""
     all_databases = os.listdir(db_location)
-    database_dict = {'Database name': [], 'Database size (MB)': [], 'Created': []}
-    for db_file in all_databases:
-        file_date, file_size = get_size_date_of_file(db_location + db_file)
+    database_dict = {'text': [], 'size': [], 'time': [], 'type':[]}
+    avaiable_databases = filter(lambda x:x.endswith('.ebwt') or x.endswith('.bt2'), all_databases)
+    for db_file in avaiable_databases:
+        file_date, file_size = get_size_date_of_file(os.path.join(db_location, db_file))
         #print file_date, file_size
-        if db_file.endswith('.ebwt'):
-            if db_file.split('.')[0] not in database_dict['Database name']:
-                database_dict['Database name'].append(db_file.split('.')[0])
-                database_dict['Created'].append(file_date)
-                database_dict['Database size (MB)'].append((file_size/1000000)*3)
-
+        if db_file.split('.')[0] not in database_dict['text']:
+            database_dict['text'].append(db_file.split('.')[0])
+            database_dict['time'].append(file_date)
+            database_dict['size'].append(int((file_size/1000000)*3))
+            database_dict['type'].append((db_file.split('.')[2]))
     return database_dict
 
 
 def get_size_date_of_file(db_file):
     """Gets file size and date."""
-    file_date = time.ctime(os.path.getctime(db_file))
-    file_date = file_date.split(' ')[2] + '.' + file_date.split(' ')[1] + '.' + file_date.split(' ')[4]
+    tm = datetime.datetime.fromtimestamp(os.path.getctime(db_file))
+    file_date =  str(tm.month) + '/' + str(tm.day) + '/' + str(tm.year) + ' ' + str(tm.hour) + ':' + str(tm.minute)
     file_size = os.stat(db_file).st_size
-    final_size = 0
     #print db_file, file_date, int(file_size)/1000000
     return file_date, int(file_size)
 
