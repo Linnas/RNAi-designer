@@ -15,7 +15,14 @@ export default {
 	},
 	removeDatabase({ commit }, { database }) {
 		console.log(database)
-		commit('removeDatabase', database)
+		axios.post('http://localhost:8000/analysis/removeDatabase', { name: database.text }).then(res => {
+			if (res.data.msg == 'Success'){
+				commit('removeDatabase', database)
+			} else {
+				console.log('Failed to delete database!')
+			}
+		})
+		
 	},
 	toggleEdit({ commit }, { database, edit }) {
 		commit('toggleEdit', {

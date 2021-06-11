@@ -216,7 +216,9 @@ class SifiPipeline(object):
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
 
-                is_efficient, strand_selection, end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery, target_site_accessibility, thermo_effcicient = self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
+                is_efficient, strand_selection, end_stability, \
+                sense5_MFE_enegery, anti_sense5_MFE_enegery, target_site_accessibility, \
+                thermo_effcicient = self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
                 json_dict = {"query_name": query_name, "sirna_name":sirna_name,
                              "sirna_position": query_position, "sirna_sequence": sirna_sequence,
@@ -284,7 +286,7 @@ class SifiPipeline(object):
         temp_bowtie_file = tempfile.mkstemp()
         os.chdir(self.bowtie_location)
         print(temp_bowtie_file[1])
-        process = subprocess.Popen(["bowtie", "-a", "-v", str(mismatches),  "-y",
+        process = subprocess.Popen(["bowtie-align-s", "-a", "-v", str(mismatches),  "-y",
                                     "-x", database_name, "-f",
                                     sequence, temp_bowtie_file[1]])
         process.wait()
@@ -348,19 +350,22 @@ class SifiPipeline(object):
         # Sense5_MFE
         #sense_five_seq = sirna_sequence[self.sirna_start_position:self.end_nucleotides+1]
         sense_five_seq = sirna_sequence[self.sirna_start_position:self.end_nucleotides]
+
         #sense_c_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_size-6:self.sirna_size-1]
         sense_c_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_size-5:self.sirna_size-1]
 
-        # Anitsense5_MFE
-        antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
-        antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
+        # Anitsense5_MFE for sifi siRNA not zhangbing siRNA
+        #antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
+        #antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
+
+        antisense_five_seq = Seq(sirna_sequence[-4::]).reverse_complement()
 
         #print 'sense ',  sirna_sequence, sense_five_seq, sense_c_seq[::-1]
         sense5_MFE_enegery = free_energy.calculate_free_energy(sense_five_seq, check=True, strict=True, c_seq=sense_c_seq[::-1], shift=1)
        # print 'G ', sense5_MFE_enegery
 
         #print 'antisense ', sirna_sequence_n2, antisense_five_seq, antisense_c_seq[::-1]
-        anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq, check=True, strict=True, c_seq=antisense_c_seq[::-1], shift=1)
+        anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
         #print 'G ', anti_sense5_MFE_enegery
 
         return sense5_MFE_enegery, anti_sense5_MFE_enegery

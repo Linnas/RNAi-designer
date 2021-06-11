@@ -5,6 +5,7 @@
              <v-data-table
             :headers="headers"
             :items="reads"
+            dense
             class="elevation-1"
           >
           </v-data-table>

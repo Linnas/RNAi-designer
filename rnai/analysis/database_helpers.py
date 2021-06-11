@@ -3,6 +3,7 @@ import time
 import datetime
 import os
 import logging
+import shutil
 import platform
 from types import *
 
@@ -52,24 +53,42 @@ def create_bowtie_database(db_name, database_file_location, bowtie_location):
         return "Error, database could not be created!", False, None, None
 
     
-def delete_databases(db_list, db_location):
+def delete_databases(db_name, db_location):
     """Deletes all selected databases."""
     bowtie_endings = [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"]
     bowtie_was_deleted = False
     os.chdir(db_location)
-    for db in db_list:
-        try:
-            for extension in bowtie_endings:
-                os.remove(db_location + str(db) + extension)
-                if not os.path.exists(db_location + str(db) + extension):
-                    bowtie_was_deleted = True
-                else:
-                    bowtie_was_deleted = False
-            
-        except (IOError, OSError, WindowsError):
-            pass
+    try:
+        for extension in bowtie_endings:
+            del_path = os.path.join(db_location, str(db_name) + extension)
+            os.remove(del_path)
+            if not os.path.exists(del_path):
+                bowtie_was_deleted = True
+            else:
+                bowtie_was_deleted = False
+        
+    except (IOError, OSError, WindowsError):
+        pass
     
     if bowtie_was_deleted:
         return "Database successfully deleted!", True
     else:
         return "Could not delete database!", False
+
+def share_database(db_name, out_dir, bowtie_location):
+    """share your database with others"""
+    dest_dir = os.path.join(out_dir, db_name)
+    if not os.path.exists(dest_dir):
+        os.mkdir(dest_dir)
+
+    for ext in [".1.ebwt", ".2.ebwt", ".3.ebwt", ".4.ebwt", ".rev.1.ebwt", ".rev.2.ebwt"]:
+        src_file = os.path.join(bowtie_location, str(db_name) + ext)
+        shutil.copy(src_file, dest_dir)
+
+    if os.path.exists(os.path.join(dest_dir, str(db_name) + '.1.ebwt')):
+        shutil.make_archive(dest_dir, 'gztar')
+    shutil.rmtree(dest)
+    if os.path.exists(dest_dir +'.tar.gz'):
+        return True
+    else:
+        return False

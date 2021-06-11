@@ -59,7 +59,12 @@ ipcMain.handle('getAppPath', e => path.dirname(appPath)
 
 )
       
-
+ipcMain.handle('share_database', e => 
+  dialog.showOpenDialog({
+    title: "Save archive to...",
+    properties:['openDirectory']
+  })
+)
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {

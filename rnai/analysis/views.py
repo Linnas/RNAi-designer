@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 import json
+import shutil
 from analysis import database_helpers
 from analysis import  pipeline
 from analysis import general_helpers
@@ -86,3 +87,40 @@ def process_data(request):
 		response['eff_sirna_plot'] = eff_sirna_plot
 		response['main_histo']     = main_histo
 	return JsonResponse(response, safe=False)
+
+@csrf_exempt
+def removeDatabase(request):
+
+	response = dict()
+	if request.method == 'POST':
+		order = json.loads(request.body)
+		name  = order['name']
+
+	msg, deleted = database_helpers.delete_databases(name, bowtie_location)
+
+	if deleted:
+		response['msg'] = 'Success'
+
+	else:
+		response['msg'] = 'Failed'
+
+	return JsonResponse(response)
+
+@csrf_exempt
+def shareDatabase(request):
+
+	response = dict()
+	if request.method == 'POST':
+		order = json.loads(request.body)
+		name  = order['name']
+		out_dir = order['dist_dir']
+
+	shared = database_helpers.share_database(name, out_dir, bowtie_location)
+
+	if shared:
+		response['msg'] = 'Success'
+
+	else:
+		response['msg'] = 'Failed'
+
+	return JsonResponse(response)

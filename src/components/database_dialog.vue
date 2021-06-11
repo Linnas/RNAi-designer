@@ -2,7 +2,6 @@
 	<v-dialog
 		v-model="dialog"
 		max-width="800px"
-		class="height:600px"
 	>
 		<template v-slot:activator="{ on, attrs }">
 			<v-btn
@@ -28,7 +27,7 @@
 					<v-icon color="primary">mdi-trash-can-outline</v-icon>
 					<span class="ml-2">Delete</span>
 				</v-btn>
-				<v-btn text class="mr-6">
+				<v-btn text class="mr-6" @click="onShareClick">
 					<v-icon color="primary">mdi-share-outline</v-icon>
 					<span class="ml-2">Share</span>
 				</v-btn>
@@ -190,6 +189,15 @@ export default {
 			console.log(this.selected[0])
 			this.removeDatabase({ database:this.selected[0] });
 			this.selected = []
+		},
+		onShareClick() {
+			window.electron.shareDatabase().then(res => {
+				if(!res.canceled) {
+					console.log(res.filePath);
+					this.axios.post(this.$localServer + 'shareDatabase', {name:this.selected[0].text,dist_dir:res.filePaths[0]})
+				}
+			})
+			
 		},
 		cancelEdit() {
 			const database = this.databases.find((e) => e.edit);

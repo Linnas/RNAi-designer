@@ -6,4 +6,6 @@ urlpatterns = [
     path('getAllDatabasesInfo', views.get_all_databases_info),
     path('run_pipeline', views.run_pipeline),
     path('process_data', views.process_data),
+    path('removeDatabase', views.removeDatabase),
+    path('shareDatabase', views.shareDatabase)
 ]
