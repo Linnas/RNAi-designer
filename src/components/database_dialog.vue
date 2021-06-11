@@ -24,7 +24,7 @@
 					<v-icon color="primary">mdi-plus</v-icon>
 					<span class="ml-2">Add</span>
 				</v-btn>
-				<v-btn text class="mr-6" @click="removeDatabase(database)">
+				<v-btn text class="mr-6" @click="onRemoveClick">
 					<v-icon color="primary">mdi-trash-can-outline</v-icon>
 					<span class="ml-2">Delete</span>
 				</v-btn>
@@ -70,7 +70,8 @@
 							<v-text-field
 								v-model="db_name"
 								single-line
-								solo
+								outlined
+								dense
 							></v-text-field>
 						</v-col>
 					</v-row>
@@ -161,22 +162,14 @@ export default {
 		createDatabase() {
 			console.log(this.path_handler.path)
 
-			if(this.db_name) {
-				window.electron.createDatabase().then(res => {
-					console.log(res)
-					if(res.canceled) {
-						return
-					} else {
-						let path = res.filePaths[0]
-						this.addDatabase({
-						path,
-						text,
-						loc:Bowtie_location,
-						size:'20Mb'
-					})
-					}
+			if(this.db_name) {					
+				this.addDatabase({
+					path: this.path_handler.path,
+					text: this.db_name,
+					size: this.path_handler.size
 				})
 			}
+			this.sub_dialog = false;
 			
 		},
 		doneEdit(e) {
@@ -192,6 +185,11 @@ export default {
 				});
 				this.toggleEdit({database, edit:false});
 			}
+		},
+		onRemoveClick() {
+			console.log(this.selected[0])
+			this.removeDatabase({ database:this.selected[0] });
+			this.selected = []
 		},
 		cancelEdit() {
 			const database = this.databases.find((e) => e.edit);

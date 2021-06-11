@@ -40,13 +40,16 @@ def create_bowtie_database(db_name, database_file_location, bowtie_location):
     process = subprocess.Popen(["bowtie-build-s", database_file_location, str(db_name)])
     process.wait()
 
-    if os.path.exists(bowtie_location + str(db_name) + ".rev.1.ebwt"):
-        return "Database successfully created!", True
+    fpath = os.path.join(bowtie_location, str(db_name) + '.rev.1.ebwt')
+
+    if os.path.exists(fpath):
+        fdate, fsize = get_size_date_of_file(fpath)
+        return "Database successfully created!", True, fdate, int(fsize*3/1e6)
     else:
         logging.debug(time.strftime("%d.%m.%Y um %H:%M:%S Uhr"))
         logging.debug(str(platform.system()+platform.release()))
         logging.exception('Got exception on main handler')
-        return "Error, database could not be created!", False
+        return "Error, database could not be created!", False, None, None
 
     
 def delete_databases(db_list, db_location):

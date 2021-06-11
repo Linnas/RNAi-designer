@@ -20,10 +20,12 @@ def create_database(request):
 		db_name = order['text']
 		database_file_location  = order['path']
 
-	info_message, bowtie_path = database_helpers.create_bowtie_database(db_name,database_file_location,bowtie_location)
+	info_message, bowtie_path, fdate, fsize = database_helpers.create_bowtie_database(db_name,database_file_location,bowtie_location)
 	response = dict()
 	if bowtie_path:
 		response['msg'] = info_message
+		response['date'] = fdate
+		response['size'] = fsize
 	else:
 		response['msg'] = 'Failed to build database from sequences.'
 	return JsonResponse(response)

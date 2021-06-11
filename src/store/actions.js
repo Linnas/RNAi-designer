@@ -1,23 +1,21 @@
 const axios = require('axios');
 
 export default {
-	addDatabase({ commit }, { path, text, size, loc }) {
-		return axios.post('http://localhost:8000/analysis/createDatabase', { path, text, loc }).then(res => {
-			console.log(res.msg)
+	addDatabase({ commit }, { path, text }) {
+		return axios.post('http://localhost:8000/analysis/createDatabase', { path, text}).then(res => {
+			var { msg , date, size } = res.data
+			console.log(msg, date, size)
 			commit('addDatabase', {
 				text,
 				size,
 				type:'ebwt',
-				time:new Date().toLocaleDateString().split('/').reverse().join('-')
-			})
-
-			
+				time:date
+			})		
 		}).catch(err => console.log(err))
 	},
 	removeDatabase({ commit }, { database }) {
-		commit('removeDatabase', {
-			database
-		})
+		console.log(database)
+		commit('removeDatabase', database)
 	},
 	toggleEdit({ commit }, { database, edit }) {
 		commit('toggleEdit', {
