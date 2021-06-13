@@ -193,7 +193,7 @@ export default {
 		onShareClick() {
 			window.electron.shareDatabase().then(res => {
 				if(!res.canceled) {
-					console.log(res.filePath);
+					console.log(res.filePaths);
 					this.axios.post(this.$localServer + 'shareDatabase', {name:this.selected[0].text,dist_dir:res.filePaths[0]})
 				}
 			})
