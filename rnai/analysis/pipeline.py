@@ -16,7 +16,7 @@ class SifiPipeline(object):
     def __init__(self, bowtie_db, query_sequences, sirna_size, mismatches, accessibility_check,
                  accessibility_window, rnaplfold_location, bowtie_location, strand_check, end_check,
                  end_stability_treshold, target_site_accessibility_treshold, terminal_check,
-                 no_efficience):
+                 no_efficience, min_gc_range, max_gc_range):
 
         """Class for si-Fi pipeline:
 
@@ -51,6 +51,8 @@ class SifiPipeline(object):
         self.ts_accessibility_treshold = target_site_accessibility_treshold                                             # Target site accessibility threshold
         self.terminal_check = terminal_check
         self.no_efficience = no_efficience
+        self.min_gc_range = min_gc_range
+        self.max_gc_range = max_gc_range
 
         # Some constants
         self.winsize = 80                                                                                               # Average the pair probabil. over windows of given size
@@ -286,7 +288,13 @@ class SifiPipeline(object):
         temp_bowtie_file = tempfile.mkstemp()
         os.chdir(self.bowtie_location)
         print(temp_bowtie_file[1])
-        process = subprocess.Popen(["bowtie-align-s", "-a", "-v", str(mismatches),  "-y",
+        # -a report all alignments per read;
+        # -n max mismatches in seed
+        # -y try hard to find valid alignments, at the expense of speed
+        # -x index name
+        # -f query input files are (multi-)FASTA .fa/.mfa
+        
+        process = subprocess.Popen(["bowtie-align-s", "-a", "-n", str(mismatches),  "-y",
                                     "-x", database_name, "-f",
                                     sequence, temp_bowtie_file[1]])
         process.wait()

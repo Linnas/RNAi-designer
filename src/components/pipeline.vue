@@ -28,7 +28,7 @@
           </v-col>
           <v-col cols="2">
             <v-text-field
-              :value="range[0]"
+              v-model="range[0]"
               hide-details
               single-line
               type="number"
@@ -41,7 +41,7 @@
           </v-col>
           <v-col cols="2">
             <v-text-field
-                :value="range[1]"
+                v-model="range[1]"
                 hide-details
                 single-line
                 type="number"
@@ -170,7 +170,7 @@ export default {
     startPipeline() {
       this.loading = true;
       var no_efficience = true;
-      const { siRNA_size, mismatch, sequences, database, items, bowtie_location, rnaplfold_location } = this;
+      const { siRNA_size, mismatch, sequences, database, items, bowtie_location, rnaplfold_location, range } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
           no_efficience = false
       const query = {
@@ -183,6 +183,8 @@ export default {
         target_site_accessibility_treshold:items[3].value,
         accessibility_window:items[4].value,
         database,
+        min_gc_range:range[0],
+        max_gc_range:range[1],
         bowtie_location,
         rnaplfold_location,
         no_efficience,
