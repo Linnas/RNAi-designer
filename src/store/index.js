@@ -8,6 +8,7 @@ Vue.use(Vuex)
 const state = {
 	databases:[],
   alignData:[],
+  lunaData:[],
   plot_data:[]
 }
 

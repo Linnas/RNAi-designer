@@ -11,4 +11,10 @@ export default {
 	editDatabase(state, { database, text = database.text}) {
 		database.text = text
 	},
+	addReadData(state, data) {
+		state.alignData = data
+	},
+	addLunaData(state, data) {
+		state.lunaData = data
+	}
 }

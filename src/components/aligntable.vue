@@ -1,19 +1,46 @@
 <template>
    <v-container>
       <v-row class="d-flex justify-center">
-         <v-col cols="12">
-             <v-data-table
-            :headers="headers"
-            :items="reads"
-            dense
-            class="elevation-1"
-          >
-          </v-data-table>
+         <v-col cols="6">
+            <v-data-table
+               :headers="headers"
+               :items="reads"
+               dense
+               class="elevation-1 mt-16"
+             >
+            </v-data-table>
+         </v-col>
+         <v-col cols="6">
+            <div id="pieDiv" ref="pieDiv"></div>
+         </v-col>
+         <v-col>
+            <v-simple-table dense>
+             <template v-slot:default>
+               <thead>
+                 <tr>
+                   <th class="text-left">
+                     location
+                   </th>
+                   <th class="text-left" v-for="i in 21" :key="i">
+                     {{ i }}
+                   </th>
+                 </tr>
+               </thead>
+               <tbody>
+                 <tr
+                   v-for="item in luna_data"
+                   :key="item[0]"
+                 >
+                   <td v-for="n in item" :key="n">{{ n }}</td>
+                 </tr>
+               </tbody>
+             </template>
+           </v-simple-table>
          </v-col>
          <v-col>
             <v-spacer></v-spacer>
             <v-btn @click="backHome" class="mr-2">Return</v-btn>
-            <v-btn @click="chooseTarget">Targets</v-btn>
+            <v-btn @click="dialog = true">Targets</v-btn>
          </v-col>
       </v-row>
       <v-dialog
@@ -47,10 +74,13 @@
    </v-container>
 </template>
 <script>
+import Plotly from 'plotly.js-dist'
+const _ = require('lodash')
 export default {
    name: 'Tabular',
    data: () => ({
       reads: null,
+      luna_data: null,
       targets:[],
       target:null,
       dialog:false,
@@ -79,6 +109,8 @@ export default {
    }),
    created() {
       var align_data = this.$store.state.alignData;
+      var luna_data  = this.$store.state.lunaData;
+      this.luna_data = luna_data;
       this.reads = align_data.map( function(r){
          return {
            name: r[0],
@@ -91,16 +123,25 @@ export default {
          }
        });
    },
+   mounted() {
+      var align_data = this.$store.state.alignData;
+
+      var hit_targets =  align_data[0].map((_, colIndex) => align_data.map(r => r[colIndex]))
+      var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+      this.targets = [...new Set(hit_targets[2])].sort(collator.compare);
+
+      var targets_counts = _.countBy(hit_targets[2])
+
+      var data = [{
+         values: Object.values(targets_counts),
+         labels: Object.keys(targets_counts),
+         type:'pie'
+      }]
+      Plotly.newPlot('pieDiv', data).then(res => console.log(res));
+   },
    methods:{
       backHome() {
          this.$router.push('/')
-      },
-      chooseTarget() {
-         var align_data = this.$store.state.alignData;
-         var hit_targets =  align_data[0].map((_, colIndex) => align_data.map(r => r[colIndex]))
-         var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
-         this.targets = [...new Set(hit_targets[2])].sort(collator.compare);
-         this.dialog = true
       },
       checkTarget() {
          var query = {

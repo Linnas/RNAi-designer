@@ -70,8 +70,9 @@ def run_pipeline(request):
 		  bowtie_location, order['strand_check'], order['end_check'], order['end_stability_treshold'],\
 		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'], order['min_gc_range'], order['max_gc_range'])
 		
-		result = sifi.run_pipeline()
-		response['align_data'] = result
+		align_data, luna_data = sifi.run_pipeline()
+		response['align_data'] = align_data
+		response['luna_data']  = luna_data.tolist()
 	return JsonResponse(response)
 
 @csrf_exempt

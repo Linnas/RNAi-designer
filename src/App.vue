@@ -28,7 +28,7 @@
       </v-row>
     </v-app-bar>
     <v-main>
-      <keep-alive>
+      <keep-alive include="/">
         <router-view></router-view>        
       </keep-alive>
     </v-main>

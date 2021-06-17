@@ -1,7 +1,7 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <v-row class="mt-6 d-flex justify-center">
-      <v-col cols="4" class="pr-8">
+      <v-col cols="4" class="px-14">
         <v-select
           :items="databases"
           label="Databases"
@@ -82,7 +82,7 @@
         ></v-textarea>
         <v-row>
           <v-col class="d-flex justify-center">
-            <v-btn rounded color="primary" x-large @click="startPipeline()" :loading="loading">parse</v-btn>
+            <v-btn rounded color="grey lighten-3" x-large @click="startPipeline()" :loading="loading">parse</v-btn>
           </v-col>
         </v-row>
       </v-col>
@@ -195,7 +195,9 @@ export default {
         console.log(res.data);
         this.loading = false;
         var align_data = res.data.align_data;
-        this.$store.state.alignData = align_data;
+        var luna_data  = res.data.luna_data;
+        this.$store.commit('addReadData', align_data)
+        this.$store.commit('addLunaData', luna_data)
         this.$router.push({ name: 'aligntable'})
       }).catch(err => {
         console.log(err);

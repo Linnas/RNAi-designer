@@ -71,59 +71,28 @@ class SifiPipeline(object):
             self.query_name = seq_record.id
             query_sequence = str(seq_record.seq)
             self.len_seq = len(query_sequence)
+            self.sirna_l = []
+            for i in range(0, len(query_sequence)-self.sirna_size+1):
+                self.sirna_l.append(query_sequence[i:i+self.sirna_size])
 
-            # Create a temp single fasta file of the query sequence
-            query_seq_temp_file = self.create_single_fasta_file(self.query_name, query_sequence)
 
-            # Create all siRNAs of size "sirna_size" and save them into multi fasta file
-            self.sirna_file, self.tab_file_name = self.create_sirnas(query_sequence, self.sirna_size)
+            self.bowtie_data = self.run_bowtie(query_sequence)
 
-            # Run BOWTIE against DB
-            bowtie_data = self.run_bowtie(self.sirna_file, self.bowtie_db, self.mismatches)
-            self.bowtie_data_l = self.bowtie_to_lst(bowtie_data)
+            self.lunp_data = self.run_rnaplfold(self.query_name, query_sequence)
 
-            # Run RNAplfold
-            self.lunp_data = self.run_rnaplfold(self.query_name, query_seq_temp_file)
-            return self.bowtie_data_l
+            return self.bowtie_data, self.lunp_data
 
 
     def process_data(self, target):
 
-        self.sirna_l = []
-        f_in = open(self.tab_file_name, 'r')
-        sirna_data = f_in.readlines()
-        for x in sirna_data:
-            x = x.split('\t')
-            self.sirna_l.append(x)
+        no_target = False if bool(bowtie_data) else True
+        fd, out_path = tempfile.mkstemp(suffix='.json')
 
-        # In case we get hits to DB
-        if self.bowtie_data_l:
-            # Both modes with hits
-            input_data = self.bowtie_data_l
-            no_target = False
+        json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
+        json.dump(json_lst, out_path, indent=4)
+        os.close(fd)
 
-        # No hits to DB, off-target plot will be not shown, design plot only show efficient sirnas
-        else:
-            # Design mode with no hits, we show only efficient siRNAs
- 
-            f_in = open(self.tab_file_name, 'r')
-            sirna_data = f_in.readlines()
-            input_data = []
-            for x in sirna_data:
-                x = x.split('\t')
-                l.append(x)
-            f_in.close()
-            no_target = True
-
-
-        if input_data:
-
-            temp_json_file = tempfile.mkstemp()
-            out_file = open(temp_json_file[1] + '.json', "w")
-            json_lst = self.data_to_json(self.query_name, input_data, no_target, self.lunp_data, target)
-            json.dump(json_lst, out_file, indent=4)
-            out_file.close()
-            table_data = general_helpers.get_table_data(temp_json_file[1] + '.json')
+        table_data = general_helpers.get_table_data(temp_json_file[1])
 
         off_target_dict, main_target_dict, efficient_dict, main_hits_histo = general_helpers.get_target_data(temp_json_file[1] + '.json', self.sirna_size)
 
@@ -151,35 +120,71 @@ class SifiPipeline(object):
 
         return table_data, json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
 
-    def bowtie_to_lst(self, bowtie_data):
-        """Converts Bowtie data into lists of list. Just for convenience."""
-        bowtie_lst = []
-        for sirna_nr in range(0, len(bowtie_data)):
-            bowtie_data_split = bowtie_data[sirna_nr].strip()
-            bowtie_data_split = bowtie_data_split.split('\t')
-            # If we have missmatches, we will append a value for each entry.
-            if len(bowtie_data_split) == 7:
-                bowtie_data_split.append(0)
-            bowtie_lst.append(bowtie_data_split)
-        return bowtie_lst
+    def run_bowtie(self, sequence):
+        """Run BOWTIE alignment."""
+        temp_bowtie_file = tempfile.mkstemp()
+        os.chdir(self.bowtie_location)
+
+        # -a report all alignments per read;
+        # -n max mismatches in seed
+        # -y try hard to find valid alignments, at the expense of speed
+        # -x index name
+        # -f query input files are (multi-)FASTA .fa/.mfa
+        fd, path = tempfile.mkstemp(suffix=".fasta")
+        with open(path, 'w') as f:
+            for i in range(0, len(sequence)-self.sirna_size+1):
+                f.write('> sirna'+str(i+1)+'\n')
+                f.write(sequence[i:i+self.sirna_size].upper() + '\n')
+        os.close(fd)
+
+        process = subprocess.Popen(["bowtie-align-s", "-a", "-n", str(self.mismatches),  "-y",
+                                "-x", self.bowtie_db, "-f",
+                                path, temp_bowtie_file[1]])
+        process.wait()
+
+        os.remove(path)
+
+        if os.path.exists(temp_bowtie_file[1]):
+            bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
+            bowtie_data_l = list(map(lambda x: x.strip().split('\t'), bowtie_data))
+            return bowtie_data_l
+        else:
+            return []
+
+    def run_rnaplfold(self, query_name, sequence):
+
+        os.chdir(self.rnaplfold_location)
+
+        with tempfile.TemporaryDirectory() as fp:
+            print(fp)     
+            prc_stdout = subprocess.PIPE
+            prc = subprocess.Popen(['RNAplfold', '-W', '%d'%self.winsize,'-L', '%d'% self.span, '-u', '%d'%self.sirna_size, '-T', '%.2f'%self.temperature], stdin=subprocess.PIPE, stdout=prc_stdout, cwd=fp)
+            prc.stdin.write(sequence.encode())
+            prc.stdin.write('\n'.encode())
+            prc.communicate()
+
+            lunp_file = os.path.join(fp, 'plfold_lunp')
+            lunp_data = np.loadtxt(lunp_file, dtype='str')
+            # Delete first lines self.sirna_size-1 because they are not complete
+            lunp_data = np.delete(lunp_data, np.r_[:self.sirna_size-1], 0)
+
+        return lunp_data
 
     def data_to_json(self, query_name, input_data, no_target, lunp_data, main_targets):
         """Extracts the data from bowtie results and put everything into json format.
-           Efficiency is calculated fro each siRNA.
+           Efficiency is calculated for each siRNA.
            If no target is found, for design mode the siRNA fasta file is used instead of Bowtie data."""
 
         json_lst = []
-        for data_split in input_data:
+        for entity in input_data:
             if not no_target:
-                sirna_name = data_split[0]
-                strand = data_split[1]
-                hit_name = data_split[2]
-                # Target sequence position coming from Bowtie (0-based offset)
-                reference_strand_pos = int(data_split[3])
-                # Position on query sequence starting from 1
-                query_position = int(sirna_name.split('sirna')[1])
-                sirna_sequence = data_split[4]
-                missmatches = data_split[7]
+                sirna_name = entity[0]
+                strand = entity[1]
+                hit_name = entity[2]
+                reference_strand_pos = int(entity[3])
+                query_position = int(sirna_name[-1])
+                sirna_sequence = entity[4]
+                missmatches = entity[7] if self.mismatches else 0
 
                 if self.mode == 0:
                     if hit_name == main_targets:
@@ -190,9 +195,9 @@ class SifiPipeline(object):
                     off_target = None
             else:
                 # We use the siRNA fasta file to get the efficiency information for each siRNA
-                sirna_name = data_split[0]
+                sirna_name = entity[0]
                 query_position = int(sirna_name.split('sirna')[1])
-                sirna_sequence = data_split[1]
+                sirna_sequence = entity[1]
                 # We don't have this information because we got no Bowtie hits
                 off_target = False
                 strand = None
@@ -214,118 +219,44 @@ class SifiPipeline(object):
                 if query_position == 1 or query_position == 2:
                     sirna_sequence_n2 = None
                 else:
-                    sirna_sequence_n2 = self.sirna_l[query_position-3][1].strip()
+                    sirna_sequence_n2 = self.sirna_l[query_position-3].strip()
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
 
-                is_efficient, strand_selection, end_stability, \
-                sense5_MFE_enegery, anti_sense5_MFE_enegery, target_site_accessibility, \
-                thermo_effcicient = self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
+                is_efficient,
+                strand_selection, 
+                end_stability,
+                sense5_MFE_enegery, 
+                anti_sense5_MFE_enegery, 
+                target_site_accessibility,
+                thermo_effcicient = \
+                self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
-                json_dict = {"query_name": query_name, "sirna_name":sirna_name,
-                             "sirna_position": query_position, "sirna_sequence": sirna_sequence,
-                             "is_efficient": is_efficient,
-                             "strand_selection": strand_selection, "end_stability": end_stability,
-                             "sense5_MFE_enegery": sense5_MFE_enegery, "anti_sense5_MFE_enegery": anti_sense5_MFE_enegery,
-                             "delta_MFE_enegery": delta_MEF_enegery,
-                             "target_site_accessibility": target_site_accessibility,
-                             "accessibility_value": lunp_data_xmer, "is_off_target": off_target,
-                             "hit_name": hit_name, "reference_strand_pos":reference_strand_pos,
-                             "strand": strand, "mismatches": missmatches,
-                             "thermo_effcicient": thermo_effcicient}
+                json_dict = {
+                    "query_name": query_name, 
+                    "sirna_name":sirna_name,
+                    "sirna_position": query_position, 
+                    "sirna_sequence": sirna_sequence,
+                    "is_efficient": is_efficient,
+                    "strand_selection": strand_selection, 
+                    "end_stability": end_stability,
+                    "sense5_MFE_enegery": sense5_MFE_enegery, 
+                    "anti_sense5_MFE_enegery": anti_sense5_MFE_enegery,
+                    "delta_MFE_enegery": delta_MEF_enegery,
+                    "target_site_accessibility": target_site_accessibility,
+                    "accessibility_value": lunp_data_xmer, 
+                    "is_off_target": off_target,
+                    "hit_name": hit_name, 
+                    "reference_strand_pos":reference_strand_pos,
+                    "strand": strand, 
+                    "mismatches": missmatches,
+                    "thermo_effcicient": thermo_effcicient
+                }
                 json_lst.append(json_dict)
 
         return json_lst
 
-    def create_sirnas(self, query_sequence, sirna_size):
-        """Create siRNA's of size "sirna_size" of a sequence.
-        Return a path with the siRNA multi fasta temp file"""
-        # Fasta format
-        temp_query_file = tempfile.mkstemp()
-        # Tab format
-        temp_tab_file = tempfile.mkstemp()
-        # Slice over sequence and split into xmers.
-        start = self.sirna_start_position
-        end = sirna_size
-        seq_list = []
-        for dummy_x in range(len(query_sequence)):
-            if len(query_sequence[start:end]) == sirna_size:
-                # Position of siRNA
-                sirna_position = start
-                # Original sequence
-                sirna = query_sequence[start:end]
-                sirna.upper()
-                seq_list.append((('sirna'+ str(sirna_position+1)), sirna))
-                start += 1
-                end += 1
-        # Store siRNAs in multiple fasta format
-        sirna_file_name, tab_file_name = self.create_multi_fasta_file(seq_list, temp_query_file[1], temp_tab_file[1])
-        return sirna_file_name, tab_file_name
 
-    def create_single_fasta_file(self, query_name, query_sequence):
-        """Create a temp file of the query sequence in fasta format."""
-        temp_query_file = tempfile.mkstemp()
-        f_temp = open(temp_query_file[1], 'w')
-        f_temp.write('>' + str(query_name) + '\n')
-        f_temp.write(str(query_sequence) + '\n')
-        f_temp.close()
-        return temp_query_file[1]
-
-    def create_multi_fasta_file(self, sequence_list, file_name, tab_file_name):
-        """Create a multiple fasta temp file."""
-        f_fasta = open(file_name, 'w')
-        f_tab = open(tab_file_name, 'w')
-        for name, sequence in sequence_list:
-            f_fasta.write('> ' + str(name) + '\n')
-            f_fasta.write(str(sequence) + '\n')
-            # Tab format
-            f_tab.write(str(name) + '\t' + str(sequence) + '\n')
-        f_fasta.close()
-        return file_name, tab_file_name
-
-    def run_bowtie(self, sequence, database_name, mismatches):
-        """Run BOWTIE alignment."""
-        temp_bowtie_file = tempfile.mkstemp()
-        os.chdir(self.bowtie_location)
-        print(temp_bowtie_file[1])
-        # -a report all alignments per read;
-        # -n max mismatches in seed
-        # -y try hard to find valid alignments, at the expense of speed
-        # -x index name
-        # -f query input files are (multi-)FASTA .fa/.mfa
-        
-        process = subprocess.Popen(["bowtie-align-s", "-a", "-n", str(mismatches),  "-y",
-                                    "-x", database_name, "-f",
-                                    sequence, temp_bowtie_file[1]])
-        process.wait()
-
-        if os.path.exists(temp_bowtie_file[1]):
-            bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
-        else:
-            bowtie_data = ''
-        return bowtie_data
-
-    def run_rnaplfold(self, query_name, sequence_file):
-        """Run RNAplfold."""
-        os.chdir(self.rnaplfold_location)
-        #sequence_file = "c:\\users\\lueck~1.ta-\\appdata\local\\temp\\tmpl90aux"
-        seq = open(sequence_file, 'r').read()
-
-        cwd = tempfile.mkdtemp()
-        prc_stdout = subprocess.PIPE
-        prc = subprocess.Popen(['RNAplfold', '-W', '%d'%self.winsize,'-L', '%d'% self.span, '-u', '%d'%self.sirna_size, '-T', '%.2f'%self.temperature], stdin=subprocess.PIPE, stdout=prc_stdout, cwd=cwd)
-        prc.stdin.write(seq.encode())
-        prc.stdin.write('\n'.encode())
-        prc.communicate()
-
-        if os.path.exists(cwd + '/' + query_name + '_lunp'):
-            lunp_file = cwd + '/' + query_name + '_lunp'
-            lunp_data = np.loadtxt(lunp_file, dtype='str')
-            # Delete first lines self.sirna_size-1 because they are not complete
-            lunp_data = np.delete(lunp_data, np.r_[:self.sirna_size-1], 0)
-        else:
-            lunp_file = ''
-        return lunp_data
 
     def free_energy3(self, sirna_sequence):
         """Calculate the free energy of a sequence.
@@ -336,7 +267,7 @@ class SifiPipeline(object):
            Example for 21mer
            siRNA GGGATGGCTCAAAGGCGTAGT
            Sense5prime_MFE siRNA position [0,1,2] -> GGG
-           Antisense5prime_MFE siRNA position [17,18,29] -> GTA"""
+           Antisense5prime_MFE siRNA position [17,18,19] -> GTA"""
 
         # Sense5_MFE
         sense_five_seq = sirna_sequence[self.sirna_start_position:self.end_nucleotides]
