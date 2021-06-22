@@ -3,7 +3,17 @@
     <v-app-bar app>
       <v-row class="d-flex justify-center text-center">
         <v-col  cols="4">
+          <v-btn
+            class="mr-12"
+            icon
+            @click="backHome"
+          >
+            <v-icon>
+              mdi-arrow-left
+            </v-icon>
+          </v-btn>
           <databaseDialog/>
+
           <v-btn 
             text 
             v-for="(title) in left_titles" 
@@ -65,7 +75,10 @@ export default {
       } else if (v === 1) {
         window.electron.openExternal('http://8.131.68.217/')
       }
-    }
+    },
+    backHome() {
+         this.$router.back()
+    },
   }
 };
 </script>

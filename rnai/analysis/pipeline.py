@@ -85,7 +85,7 @@ class SifiPipeline(object):
 
     def process_data(self, target):
 
-        no_target = False if bool(bowtie_data) else True
+        no_target = False if bool(self.bowtie_data) else True
         fd, out_path = tempfile.mkstemp(suffix='.json')
 
         json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
@@ -223,32 +223,32 @@ class SifiPipeline(object):
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
 
-                is_efficient,
-                strand_selection, 
-                end_stability,
-                sense5_MFE_enegery, 
-                anti_sense5_MFE_enegery, 
-                target_site_accessibility,
+                is_efficient,\
+                strand_selection,\
+                end_stability,\
+                sense5_MFE_enegery,\
+                anti_sense5_MFE_enegery,\
+                target_site_accessibility,\
                 thermo_effcicient = \
                 self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
                 json_dict = {
-                    "query_name": query_name, 
+                    "query_name": query_name,
                     "sirna_name":sirna_name,
-                    "sirna_position": query_position, 
+                    "sirna_position": query_position,
                     "sirna_sequence": sirna_sequence,
                     "is_efficient": is_efficient,
-                    "strand_selection": strand_selection, 
+                    "strand_selection": strand_selection,
                     "end_stability": end_stability,
-                    "sense5_MFE_enegery": sense5_MFE_enegery, 
+                    "sense5_MFE_enegery": sense5_MFE_enegery,
                     "anti_sense5_MFE_enegery": anti_sense5_MFE_enegery,
                     "delta_MFE_enegery": delta_MEF_enegery,
                     "target_site_accessibility": target_site_accessibility,
-                    "accessibility_value": lunp_data_xmer, 
+                    "accessibility_value": lunp_data_xmer,
                     "is_off_target": off_target,
-                    "hit_name": hit_name, 
+                    "hit_name": hit_name,
                     "reference_strand_pos":reference_strand_pos,
-                    "strand": strand, 
+                    "strand": strand,
                     "mismatches": missmatches,
                     "thermo_effcicient": thermo_effcicient
                 }

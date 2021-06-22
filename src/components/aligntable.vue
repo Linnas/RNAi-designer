@@ -10,37 +10,15 @@
              >
             </v-data-table>
          </v-col>
-         <v-col cols="6">
-            <div id="pieDiv" ref="pieDiv"></div>
-         </v-col>
-         <v-col>
-            <v-simple-table dense>
-             <template v-slot:default>
-               <thead>
-                 <tr>
-                   <th class="text-left">
-                     location
-                   </th>
-                   <th class="text-left" v-for="i in 21" :key="i">
-                     {{ i }}
-                   </th>
-                 </tr>
-               </thead>
-               <tbody>
-                 <tr
-                   v-for="item in luna_data"
-                   :key="item[0]"
-                 >
-                   <td v-for="n in item" :key="n">{{ n }}</td>
-                 </tr>
-               </tbody>
-             </template>
-           </v-simple-table>
-         </v-col>
-         <v-col>
+         <v-col cols="6" fluid>
+            <div id="pieDiv"></div>
             <v-spacer></v-spacer>
-            <v-btn @click="backHome" class="mr-2">Return</v-btn>
             <v-btn @click="dialog = true">Targets</v-btn>
+         </v-col>
+      </v-row>
+      <v-row>
+         <v-col>
+            <div id="lunaDiv"></div>
          </v-col>
       </v-row>
       <v-dialog
@@ -137,7 +115,52 @@ export default {
          labels: Object.keys(targets_counts),
          type:'pie'
       }]
-      Plotly.newPlot('pieDiv', data).then(res => console.log(res));
+      Plotly.newPlot('pieDiv', data)
+
+      var lunp_data = this.$store.state.lunaData;
+      var lunp_data_loc  = lunp_data.map(loc => loc[0])
+      var lunp_data_xmer = lunp_data.map(loc => loc[8])
+      var lunp_trans     = lunp_data_xmer.map(v => v>=0.1?'above':'below')
+
+      var trace = [{
+         x: lunp_data_loc,
+         y: lunp_data_xmer,
+         mode:'markers',
+         type:'scatter',
+         name:'accessibility_value',
+         marker: {
+            size:4
+         },
+         transforms: [{
+            type:'groupby',
+            groups:lunp_trans,
+            styles:[
+               {target:'above', value: {marker:{color:'red'}}},
+               {target:'below', value: {marker:{color:'blue'}}}
+            ]
+         }]
+      }]
+      var layout = {
+         title:'unpaired probabilities',
+         yaxis:{
+            range:[0, 1]
+         },
+         xaxis: {
+            range:[21, lunp_data_loc.slice(-1)[0]]
+         },
+         shapes:[{
+            type:'line',
+            x0:0,
+            y0:0.1,
+            x1:1000,
+            y1:0.1,
+            line: {
+              color: 'rgb(55, 128, 191)',
+              width: 2
+            }
+         }]
+      }
+      Plotly.newPlot('lunaDiv', trace, layout)
    },
    methods:{
       backHome() {
