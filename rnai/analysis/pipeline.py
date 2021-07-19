@@ -7,7 +7,7 @@ import pandas as pd
 import json
 from collections import Counter
 from Bio.Seq import Seq
-
+import re
 from analysis import free_energy
 from analysis import general_helpers
 import sys
@@ -17,7 +17,7 @@ class SifiPipeline(object):
     def __init__(self, bowtie_db, query_sequences, sirna_size, mismatches, accessibility_check,
                  accessibility_window, rnaplfold_location, bowtie_location, strand_check, end_check,
                  end_stability_treshold, target_site_accessibility_treshold, terminal_check,
-                 no_efficience, min_gc_range, max_gc_range, right_end_type,remove_damaging_motifs):
+                 no_efficience, min_gc_range, max_gc_range, right_end_type,remove_damaging_motifs,contiguous_num):
 
 
         """Class for si-Fi pipeline:
@@ -57,6 +57,7 @@ class SifiPipeline(object):
         self.max_gc_range = max_gc_range
         self.right_end_type = right_end_type 
         self.remove_damaging_motifs = remove_damaging_motifs
+        self.contiguous_num = contiguous_num
 
 
         # Some constants
@@ -66,7 +67,7 @@ class SifiPipeline(object):
         self.sirna_start_position = 0
         self.overhang = 2                                                                                               # siRNA overhang
         self.end_nucleotides = 3   
-        self.snp_location = r'C:\Users\AORUS\Desktop\siFi21-\snp\snp.json' 
+        self.snp_location = bowtie_location + '\\snp.json' 
         with open(self.snp_location) as f:
             self.SNPs = json.load(f)                                                                              # siRNA end nucleotides
 
@@ -85,7 +86,6 @@ class SifiPipeline(object):
 
 
             self.bowtie_data = self.run_bowtie(query_sequence)
-            print()
             self.lunp_data = self.run_rnaplfold(self.query_name, query_sequence)
 
             return self.bowtie_data, self.lunp_data
@@ -95,38 +95,43 @@ class SifiPipeline(object):
 
         no_target = False if bool(self.bowtie_data) else True
         fd, out_path = tempfile.mkstemp(suffix='.json')
-
+        fp = open(out_path, 'w')
         json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
-        json.dump(json_lst, out_path, indent=4)
+        if self.remove_damaging_motifs:
+             json_lst =  list(filter(lambda x: self.is_damaging(x['sirna_sequence']), json_lst))
+        json_lst = list(filter(lambda x: self.max_gc_range > x['gc_content']*100  > self.min_gc_range, json_lst))
+        json_lst = list(filter(lambda x: self.gc_contiguous(x['sirna_sequence']), json_lst))
+        json.dump(json_lst, fp, indent=4)
         os.close(fd)
 
-        table_data = general_helpers.get_table_data(temp_json_file[1])
+        # table_data = json_lst
 
-        off_target_dict, main_target_dict, efficient_dict, main_hits_histo = general_helpers.get_target_data(temp_json_file[1] + '.json', self.sirna_size)
+        # off_target_dict, main_target_dict, efficient_dict, main_hits_histo = general_helpers.get_target_data(out_path, self.sirna_size)
 
-        # Off-target position list
-        off_targets_pos = set()
-        for i in off_target_dict.values():
-            off_targets_pos = off_targets_pos | i
+        # # Off-target position list
+        # off_targets_pos = set()
+        # for i in off_target_dict.values():
+        #     off_targets_pos = off_targets_pos | i
 
-        # Main-target position list
-        main_targets_plot = set()
-        for i in main_target_dict.values():
-            main_targets_plot = main_targets_plot | i
+        # # Main-target position list
+        # main_targets_plot = set()
+        # for i in main_target_dict.values():
+        #     main_targets_plot = main_targets_plot | i
 
-        # Efficient position list
-        eff_sirna_plot = []
-        for i in efficient_dict.values():
-            eff_sirna_plot.extend(i)
-        eff_sirna_plot.sort()
+        # # Efficient position list
+        # eff_sirna_plot = []
+        # for i in efficient_dict.values():
+        #     eff_sirna_plot.extend(i)
+        # eff_sirna_plot.sort()
 
-        # Draw efficiency plot
-        eff_sirna_histo = np.bincount(eff_sirna_plot, minlength=self.len_seq)
+        # # Draw efficiency plot
+        # eff_sirna_histo = np.bincount(eff_sirna_plot, minlength=self.len_seq)
 
-        # Draw main target histogram
-        main_histo = np.bincount(main_hits_histo, minlength=self.len_seq)
+        # # Draw main target histogram
+        # main_histo = np.bincount(main_hits_histo, minlength=self.len_seq)
 
-        return table_data, json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
+        return json_lst
+         # json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
 
     def run_bowtie(self, sequence):
         """Run BOWTIE alignment."""
@@ -144,19 +149,19 @@ class SifiPipeline(object):
                 f.write('> sirna'+str(i+1)+'\n')
                 f.write(sequence[i:i+self.sirna_size].upper() + '\n')
         os.close(fd)
-        process = subprocess.Popen(["bowtie-align-s", "-a", "-n", str(self.mismatches),  "-y",
-                                "-x", self.bowtie_db, "-f",
-                                path, temp_bowtie_file[1]])
+
+        process = subprocess.Popen(["bowtie", "-a", "-v", str(self.mismatches),  "-y",
+                                    self.bowtie_db, "-f",
+                                    path, temp_bowtie_file[1]])
         process.wait()
 
         os.remove(path)
-
+        
         if os.path.exists(temp_bowtie_file[1]):
             bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
             bowtie_data_l = list(map(lambda x: x.strip().split('\t'), bowtie_data))
             params = [*map(lambda x: (x[2], x[3]), bowtie_data_l)]
             snp_sum_list = [self.is_snp(x, y) for (x, y) in params]
-            print(snp_sum_list)
             for i, x in enumerate(snp_sum_list):
                 bowtie_data_l[i].append(x) 
 
@@ -195,7 +200,7 @@ class SifiPipeline(object):
                 strand = entity[1]
                 hit_name = entity[2]
                 reference_strand_pos = int(entity[3])
-                query_position = int(sirna_name[-1])
+                query_position = int(sirna_name.split('sirna')[1])
                 sirna_sequence = entity[4]
                 missmatches = entity[7] if self.mismatches else 0
 
@@ -235,6 +240,7 @@ class SifiPipeline(object):
                     sirna_sequence_n2 = self.sirna_l[query_position-3].strip()
 
                 lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
+                print('ori:{}; n2:{}'.format(sirna_sequence, sirna_sequence_n2))
 
                 is_efficient,\
                 strand_selection,\
@@ -245,6 +251,7 @@ class SifiPipeline(object):
                 thermo_effcicient = \
                 self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
+                gc_content = self.calculate_gc_content(sirna_sequence)
                 json_dict = {
                     "query_name": query_name,
                     "sirna_name":sirna_name,
@@ -260,6 +267,7 @@ class SifiPipeline(object):
                     "accessibility_value": lunp_data_xmer,
                     "is_off_target": off_target,
                     "hit_name": hit_name,
+                    "gc_content":gc_content,
                     "reference_strand_pos":reference_strand_pos,
                     "strand": strand,
                     "mismatches": missmatches,
@@ -270,6 +278,14 @@ class SifiPipeline(object):
         return json_lst
 
 
+    def calculate_gc_content(self, sequence):
+        seq_letter_list = [i for i in sequence]
+        return (Counter(seq_letter_list)['C'] + Counter(seq_letter_list)['G']) / len(seq_letter_list)
+
+    def gc_contiguous(self, sequence):
+        patterns = ['C'*self.contiguous_num, 'G'*self.contiguous_num]
+        re_res = [re.findall(pattern, sequence) for pattern in patterns]
+        return bool(re_res)
 
     def free_energy3(self, sirna_sequence):
         """Calculate the free energy of a sequence.
@@ -313,6 +329,7 @@ class SifiPipeline(object):
             # Anitsense5_MFE for sifi siRNA not zhangbing siRNA
             antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
             antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
+            print(antisense_five_seq)
             anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq, check=True, strict=True, c_seq=antisense_c_seq[::-1], shift=1)
 
 
@@ -426,7 +443,7 @@ class SifiPipeline(object):
     def is_damaging(self,sirna_sequence):
         damaging_motifs = ["GGAATGT", "GAGGTAG", "AGGTAGT", "ACCCTGT", "AGCAGCA", "GCAGCAT", "GTGCAAA", "AGTGCAA", "CAGTGCA"  , "AAGTGCT"  , "AAAGTGC"    , "TCACATT", "ATTGCAC", "TCAAGTA", "TCACAGT", "CACAGTG", "AGCACCA", "GTAAACA", "GGCAGTG", "ACCCGTA", "TAAGGCA", "AAGGCAC", "CCCTGAG", "TGGTCCC", "ATGGCTT", "ACATTCA", "TGACCTA", "CCAGTGT", "AACACTG", "AATACTG", "TCCCTTT", "GCTACAT", "GGAAGAC", "CTTTGGT", "AAGGTGC", "AGCTTAT", "AGCTGCC", "GGCTCAG", "TGCATTG", "ACAGTAC", "GGAGTGT", "CGTACCG", "ATTGCTT", "GCTGGTG", "GTGGTTT", "GTAGTGT", "ACAGTAT", "GAGAACT", "TGCATAG", "TAATGCT", "ATGGCAC", "GGACGGA", "CGTGTCT", "GATATGT", "GTAACAG", "TGAAATG", "CCTTCAT", "AATCTCA", "ACTGCAT", "TGTGCTT", "GATTGTC", "GTCAGTT", "TTGTTCG", "TGTGT", "GTGGTTGTT"]
 
-        result = [*filter(lambda x: x in sirna_sequence or str(Seq(motif).reverse_complement()) in sirna_sequence, damaging_motifs)]
+        result = [*filter(lambda x: x in sirna_sequence or str(Seq(x).reverse_complement()) in sirna_sequence, damaging_motifs)]
 
         #Authored by Zero Keng
         # damaging_motif = False
@@ -437,7 +454,7 @@ class SifiPipeline(object):
         #         continue
 
         # return damaging_motif
-        return bool(result)
+        return not bool(result)
 
     def is_snp(self, hit_name, start_position):
         snp_sum = 0
@@ -447,7 +464,7 @@ class SifiPipeline(object):
                 snp_sum += 1
             else:
                 pass
-        return snp_sum
+        return bool(snp_sum)
 
 
 

@@ -8,13 +8,46 @@ const os = require('os')
 const isDevelopment   = process.env.NODE_ENV !== 'production'
 const vueDevToolsPath = path.join(os.homedir(), '/AppData/Local/Google/Chrome/User Data/Default/Extensions/nhdogjmejiglipccpnnnanhbledajbpd/5.3.4_0')
 const appPath         = app.getAppPath()
+const { spawn, exec } = require("child_process");
+var prodPath          = path.join(process.resourcesPath, 'rnai');
+var devPath  = path.join(process.cwd(), 'rnai');
+const isProduction = process.env.NODE_ENV === "production";
+var backend = null;
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
-
+console.log(prodPath)
 async function createWindow() {
-  // Create the browser window.
+  if(isDevelopment) {
+    backend = spawn(path.join(devPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:devPath})
+    backend.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+
+    backend.stderr.on('data', (data) => {
+      data = data.toString('utf-8').trim()
+      console.error(`stderr: ${data}`);
+    });
+
+    backend.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+  } else if ( isProduction) {
+    backend = spawn(path.join(prodPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:prodPath})
+    backend.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+
+    backend.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    backend.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+  }
+
   const win = new BrowserWindow({
     show:false,
     minHeight:600,
@@ -71,7 +104,18 @@ app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
-    app.quit()
+    exec(
+       `taskkill /PID ${backend.pid} /T /F`,
+        (error, stdout, stderr) => {
+         if (error) {
+           console.error(`exec error: ${error}`);
+           return;
+         }
+         console.log(`stdout: ${stdout}`);
+         console.error(`stderr: ${stderr}`);
+         app.quit();
+        }
+       )
   }
 })
 
@@ -84,8 +128,8 @@ app.on('activate', () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', async () => {
-  await session.defaultSession.loadExtension(vueDevToolsPath)
+app.on('ready', () => {
+  // await session.defaultSession.loadExtension(vueDevToolsPath)
   createWindow()
 })
 
@@ -94,6 +138,7 @@ if (isDevelopment) {
   if (process.platform === 'win32') {
     process.on('message', (data) => {
       if (data === 'graceful-exit') {
+        backend.kill();
         app.quit()
       }
     })

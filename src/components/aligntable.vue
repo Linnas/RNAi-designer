@@ -173,8 +173,8 @@ export default {
          this.axios.post('http://localhost:8000/analysis/process_data', query).then(res => {
             console.log(res.data)
             this.loading = false;
-            var plot_data = res.data.json_lst;
-            this.$store.state.plot_data = plot_data;
+            var plot_data = res.data;
+            this.$store.state.plot_data = plot_data.table_data;
             this.$router.push({ name: 'plotData'})
          })
       }

@@ -95,6 +95,7 @@ export default {
    created() {
       var plot_data = this.$store.state.plot_data;
       this.reads = plot_data
+      console.log(this.reads)
    },
    methods:{
       backHome() {

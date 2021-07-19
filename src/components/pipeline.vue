@@ -32,8 +32,8 @@
               row
             >
               <v-radio
-                label="compelent"
-                value="compelent"
+                label="complement"
+                value="complement"
               ></v-radio>
               <v-radio
                 label="dangling"
@@ -195,7 +195,7 @@ export default {
     startPipeline() {
       this.loading = true;
       var no_efficience = true;
-      const { siRNA_size, mismatch, right_end_type, sequences, database, items, bowtie_location, rnaplfold_location, range } = this;
+      const { siRNA_size, mismatch, right_end_type, sequences,consecutive, database, items, bowtie_location, rnaplfold_location, range } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
           no_efficience = false
       const query = {
@@ -215,6 +215,7 @@ export default {
         bowtie_location,
         rnaplfold_location,
         no_efficience,
+        contiguous_num:consecutive
 
       }
       console.log(query)

@@ -63,13 +63,12 @@ def run_pipeline(request):
 	else:
 		sequence_temp_file = False
 		print('Please enter a valid nucleic acid sequence!')
-
 	if sequence_temp_file:
 		sifi = pipeline.SifiPipeline(order['database'], sequence_temp_file, order['siRNA_size'],\
 		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], rnaplfold_location,\
 		  bowtie_location, order['strand_check'], order['end_check'], order['end_stability_treshold'],\
 		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'], order['min_gc_range'], order['max_gc_range'], \
-		   order['right_end_type'], order['remove_damaging_motifs'])
+		   order['right_end_type'], order['remove_damaging_motifs'], order['contiguous_num'])
 		
 		align_data, luna_data = sifi.run_pipeline()
 		response['align_data'] = align_data
@@ -83,11 +82,11 @@ def process_data(request):
 	if request.method == 'POST':
 		order = json.loads(request.body)
 		target = order['target']
-		table_data, json_lst, eff_sirna_plot, main_histo = sifi.process_data(target)
+		table_data = sifi.process_data(target)
 		response['table_data']     = table_data
-		response['json_lst']       = json_lst
-		response['eff_sirna_plot'] = eff_sirna_plot
-		response['main_histo']     = main_histo
+		# response['json_lst']       = json_lst
+		# response['eff_sirna_plot'] = eff_sirna_plot
+		# response['main_histo']     = main_histo
 	return JsonResponse(response, safe=False)
 
 @csrf_exempt
