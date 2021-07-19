@@ -68,7 +68,8 @@ def run_pipeline(request):
 		sifi = pipeline.SifiPipeline(order['database'], sequence_temp_file, order['siRNA_size'],\
 		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], rnaplfold_location,\
 		  bowtie_location, order['strand_check'], order['end_check'], order['end_stability_treshold'],\
-		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'], order['min_gc_range'], order['max_gc_range'])
+		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'], order['min_gc_range'], order['max_gc_range'], \
+		   order['right_end_type'], order['remove_damaging_motifs'])
 		
 		align_data, luna_data = sifi.run_pipeline()
 		response['align_data'] = align_data

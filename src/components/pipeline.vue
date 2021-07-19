@@ -23,6 +23,27 @@
         </v-col>
         </v-row>
         <v-row>
+          <v-col cols="3">
+            <div class="subtitle">Right end type:</div>
+          </v-col>
+          <v-col cols="9">
+            <v-radio-group
+              v-model="right_end_type"
+              row
+            >
+              <v-radio
+                label="compelent"
+                value="compelent"
+              ></v-radio>
+              <v-radio
+                label="dangling"
+                value="dangling"
+              ></v-radio>
+            </v-radio-group>
+          </v-col>
+        </v-row>
+        
+        <v-row>
           <v-col cols="4">
             <div>GC content range:</div>
           </v-col>
@@ -100,7 +121,7 @@
           <v-text-field
             solo
             dense
-            v-if="index !== 0 && index !== 1"
+            v-if="index !== 0 && index !== 1 && index !== 5"
             type="number"
             :value="item.value"
           ></v-text-field>
@@ -123,6 +144,7 @@ export default {
     range:[40, 60],
     consecutive:4,
     reads:[],
+    right_end_type:'dangling',
     bowtie_location:null,
     rnaplfold_location:null,
     appPath: null,
@@ -133,7 +155,7 @@ export default {
     },{
       status:true,
       label:'Strand selection'
-    }, {
+    },  {
       status:true,
       label:'End stability difference',
       value:1.00
@@ -145,7 +167,10 @@ export default {
       status:true,
       label:'Accessibility calculation window',
       value:8
-    }]
+    }, {
+      status:false,
+      label:'Remove damaging motifs',
+    },]
   }),
   computed: {
     ...mapState([
@@ -154,8 +179,8 @@ export default {
   },
   created() {
     window.electron.getAppPath().then(res => {
-      this.bowtie_location = res+'\\Bowtie';
-      this.rnaplfold_location = res + '\\RNAplfold';
+      this.bowtie_location = res+'\\rnai\\Bowtie';
+      this.rnaplfold_location = res + '\\rnai\\RNAplfold';
     });
     
   },
@@ -170,14 +195,16 @@ export default {
     startPipeline() {
       this.loading = true;
       var no_efficience = true;
-      const { siRNA_size, mismatch, sequences, database, items, bowtie_location, rnaplfold_location, range } = this;
+      const { siRNA_size, mismatch, right_end_type, sequences, database, items, bowtie_location, rnaplfold_location, range } = this;
       if (items[0].status && items[1].status && items[2].status && items[3].status)
           no_efficience = false
       const query = {
-        siRNA_size, mismatch, sequences, 
+        siRNA_size, mismatch, sequences,
+        right_end_type, 
         terminal_check:items[0].status,
         strand_check:items[1].status,
         end_check:items[2].status,
+        remove_damaging_motifs:items[5].status,
         end_stability_treshold:items[2].value,
         accessibility_check:items[3].status,
         target_site_accessibility_treshold:items[3].value,

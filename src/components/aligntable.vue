@@ -81,8 +81,8 @@ export default {
          text: 'Same Align',
          value:'total'
        }, {
-         text:'mismatch',
-         value: 'mismatch'
+         text:'SNP_counts',
+         value: 'snp_sum'
        }],
    }),
    created() {
@@ -97,7 +97,7 @@ export default {
            offset: r[3],
            sequence: r[4],
            total: r[6],
-           mismatch: r[7]
+           snp_sum: r[7],
          }
        });
    },
@@ -152,7 +152,7 @@ export default {
             type:'line',
             x0:0,
             y0:0.1,
-            x1:1000,
+            x1:1000000,
             y1:0.1,
             line: {
               color: 'rgb(55, 128, 191)',

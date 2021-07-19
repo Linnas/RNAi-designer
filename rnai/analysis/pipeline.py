@@ -3,6 +3,7 @@ import tempfile
 from Bio import SeqIO
 import os
 import numpy as np
+import pandas as pd
 import json
 from collections import Counter
 from Bio.Seq import Seq
@@ -16,7 +17,8 @@ class SifiPipeline(object):
     def __init__(self, bowtie_db, query_sequences, sirna_size, mismatches, accessibility_check,
                  accessibility_window, rnaplfold_location, bowtie_location, strand_check, end_check,
                  end_stability_treshold, target_site_accessibility_treshold, terminal_check,
-                 no_efficience, min_gc_range, max_gc_range):
+                 no_efficience, min_gc_range, max_gc_range, right_end_type,remove_damaging_motifs):
+
 
         """Class for si-Fi pipeline:
 
@@ -53,6 +55,9 @@ class SifiPipeline(object):
         self.no_efficience = no_efficience
         self.min_gc_range = min_gc_range
         self.max_gc_range = max_gc_range
+        self.right_end_type = right_end_type 
+        self.remove_damaging_motifs = remove_damaging_motifs
+
 
         # Some constants
         self.winsize = 80                                                                                               # Average the pair probabil. over windows of given size
@@ -60,7 +65,10 @@ class SifiPipeline(object):
         self.temperature = 22                                                                                           # Temperature for calculation free energy
         self.sirna_start_position = 0
         self.overhang = 2                                                                                               # siRNA overhang
-        self.end_nucleotides = 3                                                                                        # siRNA end nucleotides
+        self.end_nucleotides = 3   
+        self.snp_location = r'C:\Users\AORUS\Desktop\siFi21-\snp\snp.json' 
+        with open(self.snp_location) as f:
+            self.SNPs = json.load(f)                                                                              # siRNA end nucleotides
 
     def run_pipeline(self):
         """Start the si-Fi pipeline either in off-target or design mode."""
@@ -77,7 +85,7 @@ class SifiPipeline(object):
 
 
             self.bowtie_data = self.run_bowtie(query_sequence)
-
+            print()
             self.lunp_data = self.run_rnaplfold(self.query_name, query_sequence)
 
             return self.bowtie_data, self.lunp_data
@@ -136,7 +144,6 @@ class SifiPipeline(object):
                 f.write('> sirna'+str(i+1)+'\n')
                 f.write(sequence[i:i+self.sirna_size].upper() + '\n')
         os.close(fd)
-
         process = subprocess.Popen(["bowtie-align-s", "-a", "-n", str(self.mismatches),  "-y",
                                 "-x", self.bowtie_db, "-f",
                                 path, temp_bowtie_file[1]])
@@ -147,6 +154,12 @@ class SifiPipeline(object):
         if os.path.exists(temp_bowtie_file[1]):
             bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
             bowtie_data_l = list(map(lambda x: x.strip().split('\t'), bowtie_data))
+            params = [*map(lambda x: (x[2], x[3]), bowtie_data_l)]
+            snp_sum_list = [self.is_snp(x, y) for (x, y) in params]
+            print(snp_sum_list)
+            for i, x in enumerate(snp_sum_list):
+                bowtie_data_l[i].append(x) 
+
             return bowtie_data_l
         else:
             return []
@@ -293,19 +306,26 @@ class SifiPipeline(object):
         #sense_c_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_size-6:self.sirna_size-1]
         sense_c_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_size-5:self.sirna_size-1]
 
-        # Anitsense5_MFE for sifi siRNA not zhangbing siRNA
-        #antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
-        #antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
-
-        antisense_five_seq = Seq(sirna_sequence[-4::]).reverse_complement()
-
-        #print 'sense ',  sirna_sequence, sense_five_seq, sense_c_seq[::-1]
         sense5_MFE_enegery = free_energy.calculate_free_energy(sense_five_seq, check=True, strict=True, c_seq=sense_c_seq[::-1], shift=1)
-       # print 'G ', sense5_MFE_enegery
 
-        #print 'antisense ', sirna_sequence_n2, antisense_five_seq, antisense_c_seq[::-1]
-        anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
-        #print 'G ', anti_sense5_MFE_enegery
+
+        if self.right_end_type == 'dangling':
+            # Anitsense5_MFE for sifi siRNA not zhangbing siRNA
+            antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
+            antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
+            anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq, check=True, strict=True, c_seq=antisense_c_seq[::-1], shift=1)
+
+
+        if self.right_end_type == 'complement':
+            antisense_five_seq = Seq(sirna_sequence[-4::]).reverse_complement()
+            sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
+
+            #print 'sense ',  sirna_sequence, sense_five_seq, sense_c_seq[::-1]
+            # print 'G ', sense5_MFE_enegery
+
+            #print 'antisense ', sirna_sequence_n2, antisense_five_seq, antisense_c_seq[::-1]
+            anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
+            #print 'G ', anti_sense5_MFE_enegery
 
         return sense5_MFE_enegery, anti_sense5_MFE_enegery
 
@@ -402,6 +422,37 @@ class SifiPipeline(object):
             is_efficient = True
 
         return is_efficient
+
+    def is_damaging(self,sirna_sequence):
+        damaging_motifs = ["GGAATGT", "GAGGTAG", "AGGTAGT", "ACCCTGT", "AGCAGCA", "GCAGCAT", "GTGCAAA", "AGTGCAA", "CAGTGCA"  , "AAGTGCT"  , "AAAGTGC"    , "TCACATT", "ATTGCAC", "TCAAGTA", "TCACAGT", "CACAGTG", "AGCACCA", "GTAAACA", "GGCAGTG", "ACCCGTA", "TAAGGCA", "AAGGCAC", "CCCTGAG", "TGGTCCC", "ATGGCTT", "ACATTCA", "TGACCTA", "CCAGTGT", "AACACTG", "AATACTG", "TCCCTTT", "GCTACAT", "GGAAGAC", "CTTTGGT", "AAGGTGC", "AGCTTAT", "AGCTGCC", "GGCTCAG", "TGCATTG", "ACAGTAC", "GGAGTGT", "CGTACCG", "ATTGCTT", "GCTGGTG", "GTGGTTT", "GTAGTGT", "ACAGTAT", "GAGAACT", "TGCATAG", "TAATGCT", "ATGGCAC", "GGACGGA", "CGTGTCT", "GATATGT", "GTAACAG", "TGAAATG", "CCTTCAT", "AATCTCA", "ACTGCAT", "TGTGCTT", "GATTGTC", "GTCAGTT", "TTGTTCG", "TGTGT", "GTGGTTGTT"]
+
+        result = [*filter(lambda x: x in sirna_sequence or str(Seq(motif).reverse_complement()) in sirna_sequence, damaging_motifs)]
+
+        #Authored by Zero Keng
+        # damaging_motif = False
+        # for motif in self.damaging:
+        #     c_motif = str(Seq(motif).reverse_complement())
+        #     if motif in sirna_sequence or c_motif in sirna_sequence:
+        #         damaging_motif = True
+        #         continue
+
+        # return damaging_motif
+        return bool(result)
+
+    def is_snp(self, hit_name, start_position):
+        snp_sum = 0
+
+        for snp in self.SNPs[hit_name]:
+            if int(start_position) <= int(snp) <= int(start_position) + int(self.sirna_size) - 1:
+                snp_sum += 1
+            else:
+                pass
+        return snp_sum
+
+
+
+
+
 
     def calculate_efficiency(self, sirna_sequence, sirna_sequence_n2, lunp_data_xmer):
         """"""

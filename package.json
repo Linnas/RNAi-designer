@@ -16,7 +16,7 @@
     "axios": "^0.21.1",
     "core-js": "^3.6.5",
     "lodash": "^4.17.21",
-    "plotly.js-dist": "^2.0.0",
+    "plotly.js-dist": "^2.2.1",
     "vue": "^2.6.11",
     "vue-axios": "^3.2.4",
     "vue-router": "^3.5.1",
