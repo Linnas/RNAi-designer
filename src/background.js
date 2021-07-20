@@ -17,35 +17,47 @@ var backend = null;
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
-console.log(prodPath)
+
 async function createWindow() {
   if(isDevelopment) {
-    backend = spawn(path.join(devPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:devPath})
-    backend.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
+    try {
+      backend = await spawn(path.join(devPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:devPath})
+      console.log(backend.toString())
+    } catch (e) {
+      console.log(e.stderr.toString())
+    }
+    
+    // backend.stdout.on('data', (data) => {
+    //   console.log(`stdout: ${data}`);
+    // });
 
-    backend.stderr.on('data', (data) => {
-      data = data.toString('utf-8').trim()
-      console.error(`stderr: ${data}`);
-    });
+    // backend.stderr.on('data', (data) => {
+    //   data = data.toString('utf-8').trim()
+    //   console.error(`stderr: ${data}`);
+    // });
 
-    backend.on('close', (code) => {
-      console.log(`child process exited with code ${code}`);
-    });
+    // backend.on('close', (code) => {
+    //   console.log(`child process exited with code ${code}`);
+    // });
   } else if ( isProduction) {
-    backend = spawn(path.join(prodPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:prodPath})
-    backend.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
+    try {
+      backend = await spawn(path.join(prodPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:prodPath})
+      console.log(backend.toString())
+    } catch (e) {
+      console.log(e.stderr.toString())
+    }
+    
+    // backend.stdout.on('data', (data) => {
+    //   console.log(`stdout: ${data}`);
+    // });
 
-    backend.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
-    });
+    // backend.stderr.on('data', (data) => {
+    //   console.error(`stderr: ${data}`);
+    // });
 
-    backend.on('close', (code) => {
-      console.log(`child process exited with code ${code}`);
-    });
+    // backend.on('close', (code) => {
+    //   console.log(`child process exited with code ${code}`);
+    // });
   }
 
   const win = new BrowserWindow({

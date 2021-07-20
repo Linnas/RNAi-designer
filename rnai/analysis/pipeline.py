@@ -335,7 +335,7 @@ class SifiPipeline(object):
 
         if self.right_end_type == 'complement':
             antisense_five_seq = Seq(sirna_sequence[-4::]).reverse_complement()
-            sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
+            anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq)
 
             #print 'sense ',  sirna_sequence, sense_five_seq, sense_c_seq[::-1]
             # print 'G ', sense5_MFE_enegery
