@@ -44,7 +44,7 @@
             <v-card-actions>
                <v-spacer></v-spacer>
                <v-btn @click="dialog = false" class="mr-2">Cancel</v-btn>
-               <v-btn @click="checkTarget()" class="mr-1">Next</v-btn>
+               <v-btn @click="checkTarget()" class="mr-1" :loading="loading">Next</v-btn>
             
             </v-card-actions>
          </v-card>
@@ -61,6 +61,7 @@ export default {
       luna_data: null,
       targets:[],
       target:null,
+      loading:false,
       dialog:false,
       headers:[{
          text: 'Read Name',
@@ -167,15 +168,19 @@ export default {
          this.$router.push('/')
       },
       checkTarget() {
+         this.loading = true;
          var query = {
             target: this.target
          };
          this.axios.post('http://localhost:8000/analysis/process_data', query).then(res => {
-            console.log(res.data)
-            this.loading = false;
+            console.log(res.data)   
             var plot_data = res.data;
             this.$store.state.plot_data = plot_data.table_data;
+            this.loading = false;
             this.$router.push({ name: 'plotData'})
+         }).catch(e => {
+            console.log('--Server Error--');
+            console.log(e);
          })
       }
    }

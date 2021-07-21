@@ -7,7 +7,8 @@ const path = require('path')
 const os = require('os')
 const isDevelopment   = process.env.NODE_ENV !== 'production'
 const vueDevToolsPath = path.join(os.homedir(), '/AppData/Local/Google/Chrome/User Data/Default/Extensions/nhdogjmejiglipccpnnnanhbledajbpd/5.3.4_0')
-const appPath         = app.getAppPath()
+const appPath         = app.getAppPath();
+// const spawn = require("await-spawn");
 const { spawn, exec } = require("child_process");
 var prodPath          = path.join(process.resourcesPath, 'rnai');
 var devPath  = path.join(process.cwd(), 'rnai');
@@ -19,45 +20,38 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 async function createWindow() {
+
   if(isDevelopment) {
-    try {
-      backend = await spawn(path.join(devPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:devPath})
-      console.log(backend.toString())
-    } catch (e) {
-      console.log(e.stderr.toString())
-    }
+    backend = spawn(path.join(devPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:devPath})
     
-    // backend.stdout.on('data', (data) => {
-    //   console.log(`stdout: ${data}`);
-    // });
+    backend.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
 
-    // backend.stderr.on('data', (data) => {
-    //   data = data.toString('utf-8').trim()
-    //   console.error(`stderr: ${data}`);
-    // });
+    backend.stderr.on('data', (data) => {
+      data = data.toString('utf-8').trim()
+      console.error(`stderr: ${data}`);
+    });
 
-    // backend.on('close', (code) => {
-    //   console.log(`child process exited with code ${code}`);
-    // });
+    backend.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
   } else if ( isProduction) {
-    try {
-      backend = await spawn(path.join(prodPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:prodPath})
-      console.log(backend.toString())
-    } catch (e) {
-      console.log(e.stderr.toString())
-    }
     
-    // backend.stdout.on('data', (data) => {
-    //   console.log(`stdout: ${data}`);
-    // });
+    backend = await spawn(path.join(prodPath, 'python', 'python.exe'), ['manage.py', 'runserver'], {cwd:prodPath})
+      
+    
+    backend.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
 
-    // backend.stderr.on('data', (data) => {
-    //   console.error(`stderr: ${data}`);
-    // });
+    backend.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
 
-    // backend.on('close', (code) => {
-    //   console.log(`child process exited with code ${code}`);
-    // });
+    backend.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
   }
 
   const win = new BrowserWindow({

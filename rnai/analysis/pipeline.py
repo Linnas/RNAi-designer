@@ -3,7 +3,6 @@ import tempfile
 from Bio import SeqIO
 import os
 import numpy as np
-import pandas as pd
 import json
 from collections import Counter
 from Bio.Seq import Seq

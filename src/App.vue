@@ -1,34 +1,28 @@
   <template>
   <v-app>
-    <v-app-bar app>
-      <v-row class="d-flex justify-center text-center">
-        <v-col  cols="4">
-          <v-btn
-            class="mr-12"
-            icon
-            @click="backHome"
+    <v-app-bar app height="58">
+      <v-row class="d-flex justify-around text-center">
+        <v-col  cols="4">   
+          <v-chip-group
+            mandatory
+            active-class="primary--text"
           >
-            <v-icon>
-              mdi-arrow-left
-            </v-icon>
-          </v-btn>
-          <databaseDialog/>
-
-          <v-btn 
-            text 
-            v-for="(title) in left_titles" 
-            :key="title.text" 
-            class="mx-4"
-             
+            <v-chip
+              v-for="step in steps"
+              :key="step"
+              large
+              label
+              link
             >
-              <v-icon>{{ title.icon }}</v-icon>
-              <div>{{ title.text }}</div>
-          </v-btn> 
+              {{ step }}
+            </v-chip>
+          </v-chip-group> 
         </v-col>
         <v-col cols="4" >
           <div class="display-1 primary--text">RNAi Designer</div>
         </v-col>
         <v-col class="d-flex justify-center" cols="4" >
+          <databaseDialog/>
           <v-btn text v-for="(title, idx) in right_titles" :key="title.text" class="mx-4"
           @click="openExternal(idx)">
             <v-icon>{{ title.icon }}</v-icon>
@@ -43,6 +37,7 @@
       </keep-alive>
     </v-main>
   </v-app>
+
 </template>
 
 <script>
@@ -53,6 +48,7 @@ export default {
     databaseDialog
   },
   data: () => ({
+    steps:['Home', 'Align', 'Filter'],
     left_titles:[{
       icon:"mdi-file-document",
       text:"Docs"

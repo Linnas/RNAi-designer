@@ -103,7 +103,7 @@
         ></v-textarea>
         <v-row>
           <v-col class="d-flex justify-center">
-            <v-btn rounded color="grey lighten-3" x-large @click="startPipeline()" :loading="loading">parse</v-btn>
+            <v-btn rounded x-large @click="startPipeline()" :loading="loading">parse</v-btn>
           </v-col>
         </v-row>
       </v-col>
@@ -176,14 +176,7 @@ export default {
     ...mapState([
       "databases"
     ])
-  },
-  created() {
-    window.electron.getAppPath().then(res => {
-      this.bowtie_location = res+'\\rnai\\Bowtie';
-      this.rnaplfold_location = res + '\\rnai\\RNAplfold';
-    });
-    
-  },
+  },   
   filters: {
     trimSequence: function(value){
       if (!value) return ''
