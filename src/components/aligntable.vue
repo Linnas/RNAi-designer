@@ -21,16 +21,14 @@
              color="basil"
              flat
            >
-           <v-row>
-              <v-col>
-                 
-              </v-col>
-           </v-row>
+           <v-card-title class="justify-center">
+              Align results based on Bowtie v1.0
+           </v-card-title>
            <v-data-table
                :headers="headers"
                :items="reads"
                dense
-               class="elevation-1 mt-16"
+               class="elevation-1"
              >
             </v-data-table>
             <v-card-actions>
@@ -49,18 +47,14 @@
            <v-card
              color="basil"
              flat
+             
            >
             <v-row>
-               <v-col cols="4">
-                  <div id="pieDiv1"></div>
-               </v-col>
-               <v-col cols="4">
-                  <div id="pieDiv2"></div>
-               </v-col>
-            </v-row>
-            <v-row>
-               <v-col>
+               <v-col cols=8>
                   <div id="lunaDiv"></div>
+               </v-col>
+               <v-col cols=4>
+                  <div id="pieDiv"></div>
                </v-col>
             </v-row>
            </v-card>
@@ -163,24 +157,40 @@ export default {
          values: Object.values(targets_counts),
          labels: Object.keys(targets_counts),
          type:'pie',
+         name:'hit Target',
+         domain:{row:0},
+         hole:.4,
          textinfo: "label+percent",
          textposition: "outside",
-         // hoverinfo: 'label+percent+name',
+         automargin: true,
+         textinfo: "label+percent",
+         textposition: "outside",
+         hoverinfo: 'label+percent',
       };
       var trace2 = {
          values: Object.values(snp_counts),
          labels: Object.keys(snp_counts),
          type:'pie',
+         name:'SNP',
+         domain:{row:1},
+         hole:.4,
          textinfo: "label+percent",
-         textposition: "outside",
+         textposition: "inside",
+         automargin: true,
+         // textinfo: "label+percent",
+         // textposition: "outside",
+         hoverinfo: 'label+percent',
       };
       var layout = {
-         height:400,
-         width:500,
+         height:550,
+         width:300,
+         ygap:0.2,
+         margin: {"t": 0, "b": 0, "l": 0, "r": 0},
          showlegend:false,
+         grid:{rows:2, columns:1}
       };
-      Plotly.newPlot('pieDiv1', [trace1], layout)
-      Plotly.newPlot('pieDiv2', [trace2], layout)
+      Plotly.newPlot('pieDiv', [trace1, trace2], layout)
+      // Plotly.newPlot('pieDiv2', [trace2], layout)
 
       var lunp_data = this.$store.state.lunaData;
       var lunp_data_loc  = lunp_data.map(loc => loc[0])
@@ -200,8 +210,8 @@ export default {
             type:'groupby',
             groups:lunp_trans,
             styles:[
-               {target:'above', value: {marker:{color:'red'}}},
-               {target:'below', value: {marker:{color:'blue'}}}
+               {target:'above', value: {marker:{color:'#DE354C'}}},
+               {target:'below', value: {marker:{color:'#3C1874'}}}
             ]
          }]
       }]
@@ -218,8 +228,8 @@ export default {
          xaxis: {
             range:[21, lunp_data_loc.slice(-1)[0]]
          },
-         width:900,
-         height:400,
+         width:800,
+         height:500,
          shapes:[{
             type:'line',
             x0:0,
