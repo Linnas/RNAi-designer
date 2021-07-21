@@ -27,6 +27,14 @@
                      :items="reads"
                      class="elevation-1"
                    >
+                   <template v-slot:item.is_efficient="{ item }">
+                      <v-chip
+                        :color="item.is_efficient?'green':'red'"
+                        dark
+                      >
+                        {{ item.is_efficient }}
+                      </v-chip>
+                    </template>
                    </v-data-table>
                   </v-col>
                </v-row>
@@ -65,14 +73,14 @@ export default {
          text:'Strand selection',
          value: 'strand_selection'
        }, {
-         text:'Accessibility',
-         value: 'accessibility_value'
-       }, {
          text:'End stability',
          value: 'end_stability'
        }, {
-         text:'Off target',
-         value:'is_off_target'
+         text:'Accessibility',
+         value: 'accessibility_value'
+       }, {
+         text:'Target site accessibility',
+         value:'target_site_accessibility'
        }, {
          text:'Antisense MFE',
          value:'anti_sense5_MFE_enegery'
@@ -82,9 +90,6 @@ export default {
        }, {
          text:'Delta MFE',
          value:'delta_MFE_enegery'
-       }, {
-         text:'Target site accessibility',
-         value:'target_site_accessibility'
        }, {
          text:'Thermo efficient',
          value:'thermo_effcicient'
@@ -112,7 +117,6 @@ export default {
             ws.cell(i+2, 4).bool(e[this.headers[3].value])
             ws.cell(i+2, 5).number(e[this.headers[4].value])
             ws.cell(i+2, 6).bool(e[this.headers[5].value])
-            ws.cell(i+2, 7).bool(e[this.headers[6].value])
             ws.cell(i+2, 8).number(e[this.headers[7].value])
             ws.cell(i+2, 9).number(e[this.headers[8].value])
             ws.cell(i+2, 10).number(e[this.headers[9].value])

@@ -22,12 +22,11 @@
           <databaseDialog/>
           <v-btn 
             text 
-            icon 
-            v-for="(title, idx) in right_titles" 
-            :key="title.text" 
-            @click="openExternal(idx)">
-            <v-icon>{{ title.icon }}</v-icon>
+            icon  
+            @click="openExternal()">
+            <v-icon>mdi-github</v-icon>
           </v-btn>
+          <help/>
           <v-switch
             v-model="$vuetify.theme.dark"
             class="mt-3 mx-4"
@@ -41,18 +40,20 @@
       </keep-alive>
     </v-main>
   </v-app>
-
 </template>
 
 <script>
 import databaseDialog from './components/database_dialog'
+import help from './components/help'
 export default {
   name: 'App',
   components: {
-    databaseDialog
+    databaseDialog,
+    help
   },
   data: () => ({
     steps:['Home', 'Align', 'Filter'],
+    dialog: false,
     right_titles:[{
       icon:"mdi-github",
     }, {
@@ -60,12 +61,8 @@ export default {
     }]
   }),
   methods:{
-    openExternal(v) {
-      if (v === 0) {
-        window.electron.openExternal('https://github.com/Linnas/RNAi-designer')
-      } else if (v === 1) {
-        window.electron.openExternal('http://8.131.68.217/')
-      }
+    openExternal() {
+      window.electron.openExternal('https://github.com/Linnas/RNAi-designer')
     },
     backHome() {
          this.$router.back()

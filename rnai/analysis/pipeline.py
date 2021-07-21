@@ -65,10 +65,10 @@ class SifiPipeline(object):
         self.temperature = 22                                                                                           # Temperature for calculation free energy
         self.sirna_start_position = 0
         self.overhang = 2                                                                                               # siRNA overhang
-        self.end_nucleotides = 3   
+        self.end_nucleotides = 3                                                                                        # siRNA end nucleotides
         self.snp_location = bowtie_location + '\\snp.json' 
         with open(self.snp_location) as f:
-            self.SNPs = json.load(f)                                                                              # siRNA end nucleotides
+            self.SNPs = json.load(f)                                                                              
 
     def run_pipeline(self):
         """Start the si-Fi pipeline either in off-target or design mode."""
