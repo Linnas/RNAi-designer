@@ -1,33 +1,37 @@
   <template>
   <v-app>
     <v-app-bar app height="58">
-      <v-row class="d-flex justify-around text-center">
-        <v-col  cols="4">   
-          <v-chip-group
-            mandatory
-            active-class="primary--text"
-          >
-            <v-chip
-              v-for="step in steps"
-              :key="step"
-              large
-              label
-              link
+      <v-row class="mt-n2">
+        <v-col  cols="4">
+          <v-row class="mt-2">
+            <v-img src="/avata.png" max-width="50"></v-img>
+            <div 
+              class="display-1 primary--text" 
+              style="cursor: pointer;" 
+              @click="$router.push('/')"
             >
-              {{ step }}
-            </v-chip>
-          </v-chip-group> 
+              RNAi Designer
+            </div>
+          </v-row>
+          
         </v-col>
         <v-col cols="4" >
-          <div class="display-1 primary--text">RNAi Designer</div>
+          
         </v-col>
-        <v-col class="d-flex justify-center" cols="4" >
+        <v-col class="d-flex justify-end" cols="4" >
           <databaseDialog/>
-          <v-btn text v-for="(title, idx) in right_titles" :key="title.text" class="mx-4"
-          @click="openExternal(idx)">
+          <v-btn 
+            text 
+            icon 
+            v-for="(title, idx) in right_titles" 
+            :key="title.text" 
+            @click="openExternal(idx)">
             <v-icon>{{ title.icon }}</v-icon>
-            <div>{{ title.text }}</div>
-          </v-btn>     
+          </v-btn>
+          <v-switch
+            v-model="$vuetify.theme.dark"
+            class="mt-3 mx-4"
+          ></v-switch>    
         </v-col>
       </v-row>
     </v-app-bar>
@@ -49,19 +53,10 @@ export default {
   },
   data: () => ({
     steps:['Home', 'Align', 'Filter'],
-    left_titles:[{
-      icon:"mdi-file-document",
-      text:"Docs"
-    }, {
-      icon:"mdi-help",
-      text:"FAQ"
-    }],
     right_titles:[{
       icon:"mdi-github",
-      text:"Github"
     }, {
       icon:"mdi-help-circle-outline",
-      text:"help"
     }]
   }),
   methods:{

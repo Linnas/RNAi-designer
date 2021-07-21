@@ -8,9 +8,9 @@
 				text
 				v-bind="attrs"
 				v-on="on"
+				icon
 			>
 				<v-icon>mdi-database</v-icon>
-				<div>Databases</div>
 			</v-btn>
 		</template>
 		<v-card min-height="50vh">

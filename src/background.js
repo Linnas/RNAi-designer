@@ -91,7 +91,16 @@ ipcMain.handle('create-database', (event) =>
     },
     properties:['openFile']
   })
+)
 
+ipcMain.handle('exportAsExcel', (event) => 
+  dialog.showSaveDialog({
+    title: "Export as excel",
+    filters: {
+      name:"xslx",
+      extensions:['xlsx']
+    }
+  })
 )
 
 ipcMain.handle('getAppPath', e => path.dirname(appPath)

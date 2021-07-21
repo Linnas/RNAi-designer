@@ -23,10 +23,10 @@
         </v-col>
         </v-row>
         <v-row>
-          <v-col cols="3">
+          <v-col cols="12">
             <div class="subtitle">Right end type:</div>
           </v-col>
-          <v-col cols="9">
+          <v-col cols="12">
             <v-radio-group
               v-model="right_end_type"
               row
@@ -44,31 +44,37 @@
         </v-row>
         
         <v-row>
-          <v-col cols="4">
-            <div>GC content range:</div>
-          </v-col>
-          <v-col cols="2">
-            <v-text-field
-              v-model="range[0]"
+          <v-col>
+            <v-range-slider
+              v-model="range"
+              :max="100"
+              :min="0"
               hide-details
-              single-line
-              type="number"
-              suffix="%"
-              class="my-0 py-0"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="1">
-            <div class="d-flex justify-center">---</div>
-          </v-col>
-          <v-col cols="2">
-            <v-text-field
-                v-model="range[1]"
-                hide-details
-                single-line
-                type="number"
-                suffix="%"
-                class="mt-0 pt-0"
-              ></v-text-field>
+              class="align-center"
+            >
+              <template v-slot:prepend>
+                <v-text-field
+                  :value="range[0]"
+                  class="mt-0 pt-0"
+                  hide-details
+                  single-line
+                  type="number"
+                  style="width: 60px"
+                  @change="$set(range, 0, $event)"
+                ></v-text-field>
+              </template>
+              <template v-slot:append>
+                <v-text-field
+                  :value="range[1]"
+                  class="mt-0 pt-0"
+                  hide-details
+                  single-line
+                  type="number"
+                  style="width: 60px"
+                  @change="$set(range, 1, $event)"
+                ></v-text-field>
+              </template>
+            </v-range-slider>
           </v-col>
         </v-row>
         <v-row>

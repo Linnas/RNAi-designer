@@ -1,26 +1,71 @@
 <template>
    <v-container>
-      <v-row class="d-flex justify-center">
-         <v-col cols="6">
-            <v-data-table
+      <v-tabs
+         v-model="tab"
+         background-color="transparent"
+         color="basil"
+       >
+         <v-tab
+           v-for="item in ['table', 'charts']"
+           :key="item"
+         >
+           {{ item }}
+         </v-tab>
+       </v-tabs>
+
+       <v-tabs-items v-model="tab">
+         <v-tab-item
+            eager
+         >
+           <v-card
+             color="basil"
+             flat
+           >
+           <v-row>
+              <v-col>
+                 
+              </v-col>
+           </v-row>
+           <v-data-table
                :headers="headers"
                :items="reads"
                dense
                class="elevation-1 mt-16"
              >
             </v-data-table>
-         </v-col>
-         <v-col cols="6" fluid>
-            <div id="pieDiv"></div>
-            <v-spacer></v-spacer>
-            <v-btn @click="dialog = true">Targets</v-btn>
-         </v-col>
-      </v-row>
-      <v-row>
-         <v-col>
-            <div id="lunaDiv"></div>
-         </v-col>
-      </v-row>
+            <v-card-actions>
+               <v-spacer></v-spacer>
+               <v-btn 
+                  outlined 
+                  style="border-color: grey;" 
+                  @click="dialog=true"
+               >Next</v-btn>
+            </v-card-actions>
+           </v-card>
+         </v-tab-item>
+         <v-tab-item
+            eager
+         >
+           <v-card
+             color="basil"
+             flat
+           >
+            <v-row>
+               <v-col cols="4">
+                  <div id="pieDiv1"></div>
+               </v-col>
+               <v-col cols="4">
+                  <div id="pieDiv2"></div>
+               </v-col>
+            </v-row>
+            <v-row>
+               <v-col>
+                  <div id="lunaDiv"></div>
+               </v-col>
+            </v-row>
+           </v-card>
+         </v-tab-item>
+       </v-tabs-items>    
       <v-dialog
          v-model="dialog"
          persistent
@@ -58,6 +103,7 @@ export default {
    name: 'Tabular',
    data: () => ({
       reads: null,
+      tab: null,
       luna_data: null,
       targets:[],
       target:null,
@@ -106,17 +152,35 @@ export default {
       var align_data = this.$store.state.alignData;
 
       var hit_targets =  align_data[0].map((_, colIndex) => align_data.map(r => r[colIndex]))
+
       var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
       this.targets = [...new Set(hit_targets[2])].sort(collator.compare);
 
       var targets_counts = _.countBy(hit_targets[2])
+      var snp_counts = _.countBy(hit_targets[hit_targets.length - 1])
 
-      var data = [{
+      var trace1 = {
          values: Object.values(targets_counts),
          labels: Object.keys(targets_counts),
-         type:'pie'
-      }]
-      Plotly.newPlot('pieDiv', data)
+         type:'pie',
+         textinfo: "label+percent",
+         textposition: "outside",
+         // hoverinfo: 'label+percent+name',
+      };
+      var trace2 = {
+         values: Object.values(snp_counts),
+         labels: Object.keys(snp_counts),
+         type:'pie',
+         textinfo: "label+percent",
+         textposition: "outside",
+      };
+      var layout = {
+         height:400,
+         width:500,
+         showlegend:false,
+      };
+      Plotly.newPlot('pieDiv1', [trace1], layout)
+      Plotly.newPlot('pieDiv2', [trace2], layout)
 
       var lunp_data = this.$store.state.lunaData;
       var lunp_data_loc  = lunp_data.map(loc => loc[0])
@@ -142,13 +206,20 @@ export default {
          }]
       }]
       var layout = {
-         title:'unpaired probabilities',
+         title:{
+            text:'unpaired probabilities',
+            font:'Arial',
+            size:4
+         },
+         showlegend:false,
          yaxis:{
             range:[0, 1]
          },
          xaxis: {
             range:[21, lunp_data_loc.slice(-1)[0]]
          },
+         width:900,
+         height:400,
          shapes:[{
             type:'line',
             x0:0,
@@ -161,7 +232,7 @@ export default {
             }
          }]
       }
-      Plotly.newPlot('lunaDiv', trace, layout)
+      Plotly.newPlot('lunaDiv', trace, layout, {displayModeBar: false})
    },
    methods:{
       backHome() {
