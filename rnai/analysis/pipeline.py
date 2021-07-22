@@ -159,10 +159,7 @@ class SifiPipeline(object):
         if os.path.exists(temp_bowtie_file[1]):
             bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
             bowtie_data_l = list(map(lambda x: x.strip().split('\t'), bowtie_data))
-            params = [*map(lambda x: (x[2], x[3]), bowtie_data_l)]
-            snp_sum_list = [self.is_snp(x, y) for (x, y) in params]
-            for i, x in enumerate(snp_sum_list):
-                bowtie_data_l[i].append(x) 
+           
 
             return bowtie_data_l
         else:
@@ -238,8 +235,8 @@ class SifiPipeline(object):
                 else:
                     sirna_sequence_n2 = self.sirna_l[query_position-3].strip()
 
-                lunp_data_xmer = lunp_data[int(sirna_name.split('sirna')[1])-1, :].astype(np.float).tolist()[self.accessibility_window]
-                print('ori:{}; n2:{}'.format(sirna_sequence, sirna_sequence_n2))
+                lunp_data_xmer = lunp_data[query_position-1, :].astype(np.float).tolist()[self.accessibility_window]
+                SNP_exist = self.is_snp(main_targets, query_position-1)
 
                 is_efficient,\
                 strand_selection,\
@@ -249,14 +246,17 @@ class SifiPipeline(object):
                 target_site_accessibility,\
                 thermo_effcicient = \
                 self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
+                
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
                 gc_content = self.calculate_gc_content(sirna_sequence)
+
                 json_dict = {
                     "query_name": query_name,
                     "sirna_name":sirna_name,
                     "sirna_position": query_position,
                     "sirna_sequence": sirna_sequence,
                     "is_efficient": is_efficient,
+                    "SNP_exist": SNP_exist,
                     "strand_selection": strand_selection,
                     "end_stability": end_stability,
                     "sense5_MFE_enegery": sense5_MFE_enegery,
@@ -279,7 +279,8 @@ class SifiPipeline(object):
 
     def calculate_gc_content(self, sequence):
         seq_letter_list = [i for i in sequence]
-        return (Counter(seq_letter_list)['C'] + Counter(seq_letter_list)['G']) / len(seq_letter_list)
+        gc_content = (Counter(seq_letter_list)['C'] + Counter(seq_letter_list)['G']) / len(seq_letter_list)
+        return round(gc_content, 2)
 
     def gc_contiguous(self, sequence):
         patterns = ['C'*self.contiguous_num, 'G'*self.contiguous_num]
@@ -463,7 +464,7 @@ class SifiPipeline(object):
                 snp_sum += 1
             else:
                 pass
-        return bool(snp_sum)
+        return 'Yes' if bool(snp_sum) else 'No' 
 
 
 

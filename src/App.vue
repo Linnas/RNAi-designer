@@ -52,13 +52,6 @@ export default {
     help
   },
   data: () => ({
-    steps:['Home', 'Align', 'Filter'],
-    dialog: false,
-    right_titles:[{
-      icon:"mdi-github",
-    }, {
-      icon:"mdi-help-circle-outline",
-    }]
   }),
   methods:{
     openExternal() {

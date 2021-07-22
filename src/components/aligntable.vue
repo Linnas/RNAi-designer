@@ -27,7 +27,6 @@
            <v-data-table
                :headers="headers"
                :items="reads"
-               dense
                class="elevation-1"
              >
             </v-data-table>
@@ -121,9 +120,6 @@ export default {
        }, {
          text: 'Same Align',
          value:'total'
-       }, {
-         text:'SNP_counts',
-         value: 'snp_sum'
        }],
    }),
    created() {
@@ -251,7 +247,7 @@ export default {
       checkTarget() {
          this.loading = true;
          var query = {
-            target: this.target
+            target: this.targets[this.target]
          };
          this.axios.post('http://localhost:8000/analysis/process_data', query).then(res => {
             console.log(res.data)   

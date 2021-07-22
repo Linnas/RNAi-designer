@@ -70,6 +70,12 @@ export default {
          text: 'Efficiency',
          value: 'is_efficient'
        }, {
+         text: 'GC content',
+         value: 'gc_content'
+       },{
+         text: 'SNP exist',
+         value: 'SNP_exist'
+       },{
          text:'Strand selection',
          value: 'strand_selection'
        }, {
