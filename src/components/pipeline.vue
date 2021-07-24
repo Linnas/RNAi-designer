@@ -151,9 +151,6 @@ export default {
     consecutive:4,
     reads:[],
     right_end_type:'dangling',
-    bowtie_location:null,
-    rnaplfold_location:null,
-    appPath: null,
     loading: false,
     items:[{
       status:true,
@@ -211,8 +208,6 @@ export default {
         database,
         min_gc_range:range[0],
         max_gc_range:range[1],
-        bowtie_location,
-        rnaplfold_location,
         no_efficience,
         contiguous_num:consecutive
 
