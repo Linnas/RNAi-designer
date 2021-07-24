@@ -147,45 +147,26 @@ export default {
       this.targets = [...new Set(hit_targets[2])].sort(collator.compare);
 
       var targets_counts = _.countBy(hit_targets[2])
-      var snp_counts = _.countBy(hit_targets[hit_targets.length - 1])
 
       var trace1 = {
          values: Object.values(targets_counts),
          labels: Object.keys(targets_counts),
          type:'pie',
          name:'hit Target',
-         domain:{row:0},
          hole:.4,
          textinfo: "label+percent",
          textposition: "outside",
          automargin: true,
-         textinfo: "label+percent",
-         textposition: "outside",
-         hoverinfo: 'label+percent',
-      };
-      var trace2 = {
-         values: Object.values(snp_counts),
-         labels: Object.keys(snp_counts),
-         type:'pie',
-         name:'SNP',
-         domain:{row:1},
-         hole:.4,
-         textinfo: "label+percent",
-         textposition: "inside",
-         automargin: true,
-         // textinfo: "label+percent",
-         // textposition: "outside",
          hoverinfo: 'label+percent',
       };
       var layout = {
          height:550,
          width:300,
-         ygap:0.2,
          margin: {"t": 0, "b": 0, "l": 0, "r": 0},
-         showlegend:false,
-         grid:{rows:2, columns:1}
+         showlegend:false
+
       };
-      Plotly.newPlot('pieDiv', [trace1, trace2], layout)
+      Plotly.newPlot('pieDiv', [trace1], layout)
       // Plotly.newPlot('pieDiv2', [trace2], layout)
 
       var lunp_data = this.$store.state.lunaData;

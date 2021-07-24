@@ -84,6 +84,7 @@ def process_data(request):
 		target = order['target']
 		table_data = sifi.process_data(target)
 		response['table_data']     = table_data
+		print(table_data)
 		# response['json_lst']       = json_lst
 		# response['eff_sirna_plot'] = eff_sirna_plot
 		# response['main_histo']     = main_histo

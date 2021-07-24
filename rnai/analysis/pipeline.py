@@ -1,15 +1,16 @@
 import subprocess
 import tempfile
-from Bio import SeqIO
 import os
 import numpy as np
 import json
-from collections import Counter
-from Bio.Seq import Seq
 import re
-from analysis import free_energy
-from analysis import general_helpers
 import sys
+from Bio         import SeqIO, SeqUtils
+from Bio.Seq     import Seq
+from collections import Counter
+from analysis    import free_energy
+from analysis    import general_helpers
+
 
 
 class SifiPipeline(object):
@@ -19,7 +20,8 @@ class SifiPipeline(object):
                  no_efficience, min_gc_range, max_gc_range, right_end_type,remove_damaging_motifs,contiguous_num):
 
 
-        """Class for si-Fi pipeline:
+        """
+        Class for si-Fi pipeline:
 
             si-Fi pipeline for RNAi design.
            1. Save query sequence as fasta file.
@@ -34,22 +36,22 @@ class SifiPipeline(object):
            2. Split query sequence into xmers and store as fasta file.
            3. Run BOWTIE against DB and extract all information.
            4. For each hit, do strand selection for efficiency.
-           5. Store data into json file for plotting."""
+           5. Store data into json file for plotting.
+        """
 
-        self.bowtie_db = bowtie_db                                                                                      # Bowtie DB
-        self.query_sequences = query_sequences                                                                          # List of all query sequences in multi fasta format
-        self.sirna_size = sirna_size                                                                                    # siRNA size
-        self.mismatches = mismatches                                                                                    # Allowed mismatches                                                                                # DB path
-        self.rnaplfold_location = rnaplfold_location                                                                    # Rnaplfold path
-        self.bowtie_location = bowtie_location                                                                          # Bowtie path
-        self.mode = 0                                                                                                # Mode, either RNAi design or off-target prediction
+        self.bowtie_db = bowtie_db                                              # Bowtie DB
+        self.query_sequences = query_sequences                                  # List of all query sequences in multi fasta format
+        self.sirna_size = sirna_size                                            # siRNA size
+        self.mismatches = mismatches                                            # Allowed mismatches                                                                                # DB path
+        self.rnaplfold_location = rnaplfold_location                            # Rnaplfold path
+        self.bowtie_location = bowtie_location                                  # Bowtie path
 
-        self.strand_check = strand_check                                                                                # Strand selection is enabled or disabled
-        self.end_check = end_check                                                                                      # End stability selection is enabled or disabled
-        self.accessibility_check = accessibility_check                                                                  # Target site accessibility is enabled or disabled
-        self.accessibility_window = accessibility_window                                                                # Accessibility window
-        self.end_stability_treshold = end_stability_treshold                                                            # End stability treshold
-        self.ts_accessibility_treshold = target_site_accessibility_treshold                                             # Target site accessibility threshold
+        self.strand_check = strand_check                                        # Strand selection is enabled or disabled
+        self.end_check = end_check                                              # End stability selection is enabled or disabled
+        self.accessibility_check = accessibility_check                          # Target site accessibility is enabled or disabled
+        self.accessibility_window = accessibility_window                        # Accessibility window
+        self.end_stability_treshold = end_stability_treshold                    # End stability treshold
+        self.ts_accessibility_treshold = target_site_accessibility_treshold     # Target site accessibility threshold
         self.terminal_check = terminal_check
         self.no_efficience = no_efficience
         self.min_gc_range = min_gc_range
@@ -60,12 +62,12 @@ class SifiPipeline(object):
 
 
         # Some constants
-        self.winsize = 80                                                                                               # Average the pair probabil. over windows of given size
-        self.span = 40                                                                                                  # Set the maximum allowed separation of a base pair to span
-        self.temperature = 22                                                                                           # Temperature for calculation free energy
-        self.sirna_start_position = 0
-        self.overhang = 2                                                                                               # siRNA overhang
-        self.end_nucleotides = 3                                                                                        # siRNA end nucleotides
+        self.winsize = 80                                                        # Average the pair probabil. over windows of given size
+        self.span = 40                                                           # Set the maximum allowed separation of a base pair to span
+        self.temperature = 22                                                    # Temperature for calculation free energ
+        self.sirna_start_position = 0                                            
+        self.overhang = 2                                                        # siRNA overhang
+        self.end_nucleotides = 3                                                 # siRNA end nucleotides
         self.snp_location = bowtie_location + '\\snp.json' 
         with open(self.snp_location) as f:
             self.SNPs = json.load(f)                                                                              
@@ -73,7 +75,6 @@ class SifiPipeline(object):
     def run_pipeline(self):
         """Start the si-Fi pipeline either in off-target or design mode."""
 
-        # Iterate over all query sequences
         for seq_record in SeqIO.parse(self.query_sequences, "fasta"):
             # Store ID and sequence
             self.query_name = seq_record.id
@@ -98,7 +99,7 @@ class SifiPipeline(object):
         json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
         if self.remove_damaging_motifs:
              json_lst =  list(filter(lambda x: self.is_damaging(x['sirna_sequence']), json_lst))
-        json_lst = list(filter(lambda x: self.max_gc_range > x['gc_content']*100  > self.min_gc_range, json_lst))
+        json_lst = list(filter(lambda x: self.max_gc_range > x['gc_content']  > self.min_gc_range, json_lst))
         json_lst = list(filter(lambda x: self.gc_contiguous(x['sirna_sequence']), json_lst))
         json.dump(json_lst, fp, indent=4)
         os.close(fd)
@@ -134,43 +135,38 @@ class SifiPipeline(object):
 
     def run_bowtie(self, sequence):
         """Run BOWTIE alignment."""
-        temp_bowtie_file = tempfile.mkstemp()
         os.chdir(self.bowtie_location)
-
         # -a report all alignments per read;
         # -n max mismatches in seed
         # -y try hard to find valid alignments, at the expense of speed
         # -x index name
         # -f query input files are (multi-)FASTA .fa/.mfa
-        fd, path = tempfile.mkstemp(suffix=".fasta")
-        with open(path, 'w') as f:
+        fd, out_path    = tempfile.mkstemp()
+        fdd, input_path = tempfile.mkstemp(suffix=".fasta")
+
+        with os.fdopen(fdd, mode="r+") as fp:
             for i in range(0, len(sequence)-self.sirna_size+1):
-                f.write('> sirna'+str(i+1)+'\n')
-                f.write(sequence[i:i+self.sirna_size].upper() + '\n')
-        os.close(fd)
+                fp.write('> sirna'+str(i+1)+'\n')
+                fp.write(sequence[i:i+self.sirna_size].upper() + '\n')
 
         process = subprocess.Popen(["bowtie", "-a", "-v", str(self.mismatches),  "-y",
                                     self.bowtie_db, "-f",
-                                    path, temp_bowtie_file[1]])
+                                    input_path, out_path])
         process.wait()
 
-        os.remove(path)
-        
-        if os.path.exists(temp_bowtie_file[1]):
-            bowtie_data = open(temp_bowtie_file[1], 'r').readlines()
-            bowtie_data_l = list(map(lambda x: x.strip().split('\t'), bowtie_data))
-           
+        with os.fdopen(fd) as fp:
+            bowtie_data = fp.readlines()
+            bowtie_data = list(map(lambda x: x.strip().split('\t'), bowtie_data))
 
-            return bowtie_data_l
-        else:
-            return []
+        os.unlink(out_path)
+        os.unlink(input_path)
+        return bowtie_data
 
     def run_rnaplfold(self, query_name, sequence):
 
         os.chdir(self.rnaplfold_location)
 
         with tempfile.TemporaryDirectory() as fp:
-            print(fp)     
             prc_stdout = subprocess.PIPE
             prc = subprocess.Popen(['RNAplfold', '-W', '%d'%self.winsize,'-L', '%d'% self.span, '-u', '%d'%self.sirna_size, '-T', '%.2f'%self.temperature], stdin=subprocess.PIPE, stdout=prc_stdout, cwd=fp)
             prc.stdin.write(sequence.encode())
@@ -184,13 +180,13 @@ class SifiPipeline(object):
 
         return lunp_data
 
-    def data_to_json(self, query_name, input_data, no_target, lunp_data, main_targets):
+    def data_to_json(self, query_name, align_data, no_target, lunp_data, main_targets):
         """Extracts the data from bowtie results and put everything into json format.
            Efficiency is calculated for each siRNA.
            If no target is found, for design mode the siRNA fasta file is used instead of Bowtie data."""
 
         json_lst = []
-        for entity in input_data:
+        for entity in align_data:
             if not no_target:
                 sirna_name = entity[0]
                 strand = entity[1]
@@ -200,13 +196,11 @@ class SifiPipeline(object):
                 sirna_sequence = entity[4]
                 missmatches = entity[7] if self.mismatches else 0
 
-                if self.mode == 0:
-                    if hit_name == main_targets:
-                        off_target = False
-                    else:
-                        off_target = True
+                if hit_name == main_targets:
+                    off_target = False
                 else:
-                    off_target = None
+                    off_target = True
+                
             else:
                 # We use the siRNA fasta file to get the efficiency information for each siRNA
                 sirna_name = entity[0]
@@ -232,11 +226,13 @@ class SifiPipeline(object):
                     # We must ignore the first two siRNAs because we can not calculate free energy
                 if query_position == 1 or query_position == 2:
                     sirna_sequence_n2 = None
+                    sirna_complement = sirna_sequence
                 else:
                     sirna_sequence_n2 = self.sirna_l[query_position-3].strip()
+                    sirna_complement = str(Seq(sirna_sequence_n2).reverse_complement().strip())[::-1].upper()
+
 
                 lunp_data_xmer = lunp_data[query_position-1, :].astype(np.float).tolist()[self.accessibility_window]
-                SNP_exist = self.is_snp(main_targets, query_position-1)
 
                 is_efficient,\
                 strand_selection,\
@@ -248,13 +244,14 @@ class SifiPipeline(object):
                 self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
                 
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
-                gc_content = self.calculate_gc_content(sirna_sequence)
-
+                gc_percentage = SeqUtils.GC(sirna_sequence)
+                SNP_exist = self.is_snp(main_targets, query_position-1)
                 json_dict = {
                     "query_name": query_name,
                     "sirna_name":sirna_name,
                     "sirna_position": query_position,
                     "sirna_sequence": sirna_sequence,
+                    "sirna_complement": sirna_complement,
                     "is_efficient": is_efficient,
                     "SNP_exist": SNP_exist,
                     "strand_selection": strand_selection,
@@ -266,21 +263,15 @@ class SifiPipeline(object):
                     "accessibility_value": lunp_data_xmer,
                     "is_off_target": off_target,
                     "hit_name": hit_name,
-                    "gc_content":gc_content,
+                    "gc_content":gc_percentage,
                     "reference_strand_pos":reference_strand_pos,
                     "strand": strand,
                     "mismatches": missmatches,
                     "thermo_effcicient": thermo_effcicient
                 }
-                json_lst.append(json_dict)
-
+                if(is_efficient):
+                    json_lst.append(json_dict)
         return json_lst
-
-
-    def calculate_gc_content(self, sequence):
-        seq_letter_list = [i for i in sequence]
-        gc_content = (Counter(seq_letter_list)['C'] + Counter(seq_letter_list)['G']) / len(seq_letter_list)
-        return round(gc_content, 2)
 
     def gc_contiguous(self, sequence):
         patterns = ['C'*self.contiguous_num, 'G'*self.contiguous_num]
@@ -329,7 +320,6 @@ class SifiPipeline(object):
             # Anitsense5_MFE for sifi siRNA not zhangbing siRNA
             antisense_five_seq = Seq(sirna_sequence_n2).reverse_complement().strip()[self.sirna_start_position:self.end_nucleotides]
             antisense_c_seq = sirna_sequence[self.sirna_size-5:self.sirna_size-1]
-            print(antisense_five_seq)
             anti_sense5_MFE_enegery = free_energy.calculate_free_energy(antisense_five_seq, check=True, strict=True, c_seq=antisense_c_seq[::-1], shift=1)
 
 
@@ -465,11 +455,6 @@ class SifiPipeline(object):
             else:
                 pass
         return 'Yes' if bool(snp_sum) else 'No' 
-
-
-
-
-
 
     def calculate_efficiency(self, sirna_sequence, sirna_sequence_n2, lunp_data_xmer):
         """"""
