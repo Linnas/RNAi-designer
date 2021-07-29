@@ -57,6 +57,7 @@ async function createWindow() {
   const win = new BrowserWindow({
     show:false,
     minHeight:600,
+    minWidth:900,
     icon: "./DNA.ico",
     webPreferences: {
       

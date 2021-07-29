@@ -66,7 +66,6 @@
    </v-container>
 </template>
 <script>
-var xl = require('excel4node');
 const URL = 'http://127.0.0.1:8000/analysis/exportTable'
 export default {
    name: 'Tabular',
@@ -128,37 +127,12 @@ export default {
    },
    methods:{
       exportAsExcel() {
-         // var plot_data = this.reads
-         // var headers = this.headers
-         // var wb = new xl.Workbook();
-         // var ws = wb.addWorksheet('Sheet 1');
-         // for (var i = 0; i < headers.length; i++) {
-            
-         // }
-         // wb.write('hello.xlsl')
-         // headers.forEach((e, i) => ws.cell(1, i+1).string(e.text))
-         // plot_data.forEach((e, i) => {
-         //    ws.cell(i+2, 1).number(e[headers[0].value])
-         //    ws.cell(i+2, 2).string(e[headers[1].value])
-         //    ws.cell(i+2, 3).string(e[headers[2].value])
-         //    ws.cell(i+2, 4).bool(e[headers[3].value])
-         //    ws.cell(i+2, 5).number(e[headers[4].value])
-         //    ws.cell(i+2, 6).string(e[headers[5].value])
-         //    ws.cell(i+2, 7).bool(e[headers[6].value])
-         //    ws.cell(i+2, 8).bool(e[headers[7].value])
-         //    ws.cell(i+2, 9).number(e[headers[8].value])
-         //    ws.cell(i+2, 10).bool(e[headers[9].value])
-         //    ws.cell(i+2, 11).number(e[headers[10].value])
-         //    ws.cell(i+2, 12).number(e[headers[11].value])
-         //    ws.cell(i+2, 13).number(e[headers[12].value])
-         //    ws.cell(i+2, 14).bool(e[headers[13].value])
-         // })
         window.electron.export().then(res => {
           if (res.canceled) return;
           console.log(res.filePath)
           return this.axios.post(URL, {path:res.filePath})
-         }).then(sig => {
-            if(sig === '200') {
+         }).then(res => {
+            if(res.code === '200') {
               console.log('Saved successfully')
             }
           }).catch(e => {

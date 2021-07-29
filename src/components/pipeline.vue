@@ -23,10 +23,10 @@
         </v-col>
         </v-row>
         <v-row>
-          <v-col cols="12">
-            <div class="subtitle">Right end type:</div>
+          <v-col cols="12" class="py-0">
+            <div class="subtitle">Right end type</div>
           </v-col>
-          <v-col cols="12">
+          <v-col cols="12" class="py-0">
             <v-radio-group
               v-model="right_end_type"
               row
@@ -44,7 +44,10 @@
         </v-row>
         
         <v-row>
-          <v-col>
+          <v-col cols="12">
+            <div class="subtitle">GC content range</div>
+          </v-col>
+          <v-col cols="12" class="pt-0">
             <v-range-slider
               v-model="range"
               :max="100"
@@ -101,7 +104,7 @@
           solo
           name="sequence-input"
           label=""
-          height="350"
+          height="380"
           :value="sequences | trimSequence"
           counter
           @input="value=>sequences=value"
@@ -116,7 +119,7 @@
 
       <v-col cols="4" class="pl-8">
         <v-row v-for="(item, index) in items" :key="item.label" dense>
-        <v-col cols="6">
+        <v-col cols="9">
           <v-checkbox
             v-model="item.status"
             :label="item.label"
