@@ -84,7 +84,6 @@ def process_data(request):
 		target = order['target']
 		table_data = sifi.process_data(target)
 		response['table_data']     = table_data
-		print(table_data)
 		# response['json_lst']       = json_lst
 		# response['eff_sirna_plot'] = eff_sirna_plot
 		# response['main_histo']     = main_histo
@@ -124,5 +123,18 @@ def shareDatabase(request):
 
 	else:
 		response['msg'] = 'Failed'
+
+	return JsonResponse(response)
+
+@csrf_exempt
+def exportTable(request):
+
+	if request.method == 'POST':
+		order = json.loads(request.body)
+		path = order['path']
+
+		sifi.export(path)
+
+		response = {'code':'200'}
 
 	return JsonResponse(response)

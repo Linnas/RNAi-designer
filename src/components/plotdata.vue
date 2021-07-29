@@ -20,8 +20,20 @@
              color="basil"
              flat
            >
-              <v-row class="d-flex justify-center">
+              <v-row>
                   <v-col cols="12">
+                    <div class="d-flex justify-space-between my-4">
+                      <div></div>
+                      <div class="title">
+                        Efficient siRNA candidates table
+                      </div>
+                      <div style="margin-top: -6px;">
+                        <v-btn icon @click="exportAsExcel"><v-icon>
+                          mdi-export-variant
+                        </v-icon></v-btn>
+                      </div>
+                      
+                    </div>
                       <v-data-table
                      :headers="headers"
                      :items="reads"
@@ -55,6 +67,7 @@
 </template>
 <script>
 var xl = require('excel4node');
+const URL = 'http://127.0.0.1:8000/analysis/exportTable'
 export default {
    name: 'Tabular',
    data: () => ({
@@ -66,6 +79,9 @@ export default {
        }, {
          text: 'Sequence',
          value: 'sirna_sequence'
+       }, {
+         text: 'duplex',
+         value: 'sirna_complement'
        }, {
          text: 'Efficiency',
          value: 'is_efficient'
@@ -103,40 +119,58 @@ export default {
    }),
    created() {
       var plot_data = this.$store.state.plot_data;
+      plot_data.forEach(e => {
+        e['sirna_complement'] = 'XX'+e['sirna_sequence']+'\n'+e['sirna_complement']+'XX'
+      })
+      console.log(plot_data[0])
       this.reads = plot_data
       console.log(this.reads[0])
    },
    methods:{
       exportAsExcel() {
-         var plot_data = this.reads
-         var title = this.headers.map(i => i.text)
-         var wb = new xl.Workbook();
-         var ws = wb.addWorksheet('Sheet 1');
-         for (var i = 0; i < 13; i++) {
-            console.log(this.headers[i].text)
-            ws.cell(1, i+1).string(this.headers[i].text)
-         }
-         plot_data.forEach((e, i) => {
-            ws.cell(i+2, 1).number(e[this.headers[0].value])
-            ws.cell(i+2, 2).string(e[this.headers[1].value])
-            ws.cell(i+2, 3).bool(e[this.headers[2].value])
-            ws.cell(i+2, 4).bool(e[this.headers[3].value])
-            ws.cell(i+2, 5).number(e[this.headers[4].value])
-            ws.cell(i+2, 6).bool(e[this.headers[5].value])
-            ws.cell(i+2, 8).number(e[this.headers[7].value])
-            ws.cell(i+2, 9).number(e[this.headers[8].value])
-            ws.cell(i+2, 10).number(e[this.headers[9].value])
-            ws.cell(i+2, 12).bool(e[this.headers[10].value])
-            ws.cell(i+2, 13).bool(e[this.headers[11].value])
-         })
-         window.electron.export().then(res => {
-            if (res.canceled) return;
-            console.log(res.filePath)
-            wb.write(res.filePath);
-         })
-         
+         // var plot_data = this.reads
+         // var headers = this.headers
+         // var wb = new xl.Workbook();
+         // var ws = wb.addWorksheet('Sheet 1');
+         // for (var i = 0; i < headers.length; i++) {
+            
+         // }
+         // wb.write('hello.xlsl')
+         // headers.forEach((e, i) => ws.cell(1, i+1).string(e.text))
+         // plot_data.forEach((e, i) => {
+         //    ws.cell(i+2, 1).number(e[headers[0].value])
+         //    ws.cell(i+2, 2).string(e[headers[1].value])
+         //    ws.cell(i+2, 3).string(e[headers[2].value])
+         //    ws.cell(i+2, 4).bool(e[headers[3].value])
+         //    ws.cell(i+2, 5).number(e[headers[4].value])
+         //    ws.cell(i+2, 6).string(e[headers[5].value])
+         //    ws.cell(i+2, 7).bool(e[headers[6].value])
+         //    ws.cell(i+2, 8).bool(e[headers[7].value])
+         //    ws.cell(i+2, 9).number(e[headers[8].value])
+         //    ws.cell(i+2, 10).bool(e[headers[9].value])
+         //    ws.cell(i+2, 11).number(e[headers[10].value])
+         //    ws.cell(i+2, 12).number(e[headers[11].value])
+         //    ws.cell(i+2, 13).number(e[headers[12].value])
+         //    ws.cell(i+2, 14).bool(e[headers[13].value])
+         // })
+        window.electron.export().then(res => {
+          if (res.canceled) return;
+          console.log(res.filePath)
+          return this.axios.post(URL, {path:res.filePath})
+         }).then(sig => {
+            if(sig === '200') {
+              console.log('Saved successfully')
+            }
+          }).catch(e => {
+            console.log(e)
+          })   
       }
    }
    
 }
 </script>
+<style scoped>
+  .headlay {
+    margin: auto;
+  }
+</style>

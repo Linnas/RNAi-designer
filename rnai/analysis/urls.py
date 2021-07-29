@@ -7,5 +7,6 @@ urlpatterns = [
     path('run_pipeline', views.run_pipeline),
     path('process_data', views.process_data),
     path('removeDatabase', views.removeDatabase),
-    path('shareDatabase', views.shareDatabase)
+    path('shareDatabase', views.shareDatabase),
+    path('exportTable', views.exportTable)
 ]

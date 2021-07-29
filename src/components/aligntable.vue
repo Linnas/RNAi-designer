@@ -156,13 +156,11 @@ export default {
          hole:.4,
          textinfo: "label+percent",
          textposition: "outside",
-         automargin: true,
          hoverinfo: 'label+percent',
       };
       var layout = {
          height:550,
          width:300,
-         margin: {"t": 0, "b": 0, "l": 0, "r": 0},
          showlegend:false
 
       };

@@ -5,6 +5,7 @@ import numpy as np
 import json
 import re
 import sys
+import csv
 from Bio         import SeqIO, SeqUtils
 from Bio.Seq     import Seq
 from collections import Counter
@@ -95,6 +96,7 @@ class SifiPipeline(object):
 
         no_target = False if bool(self.bowtie_data) else True
         fd, out_path = tempfile.mkstemp(suffix='.json')
+        self.output_path = out_path
         fp = open(out_path, 'w')
         json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
         if self.remove_damaging_motifs:
@@ -103,32 +105,6 @@ class SifiPipeline(object):
         json_lst = list(filter(lambda x: self.gc_contiguous(x['sirna_sequence']), json_lst))
         json.dump(json_lst, fp, indent=4)
         os.close(fd)
-
-        # table_data = json_lst
-
-        # off_target_dict, main_target_dict, efficient_dict, main_hits_histo = general_helpers.get_target_data(out_path, self.sirna_size)
-
-        # # Off-target position list
-        # off_targets_pos = set()
-        # for i in off_target_dict.values():
-        #     off_targets_pos = off_targets_pos | i
-
-        # # Main-target position list
-        # main_targets_plot = set()
-        # for i in main_target_dict.values():
-        #     main_targets_plot = main_targets_plot | i
-
-        # # Efficient position list
-        # eff_sirna_plot = []
-        # for i in efficient_dict.values():
-        #     eff_sirna_plot.extend(i)
-        # eff_sirna_plot.sort()
-
-        # # Draw efficiency plot
-        # eff_sirna_histo = np.bincount(eff_sirna_plot, minlength=self.len_seq)
-
-        # # Draw main target histogram
-        # main_histo = np.bincount(main_hits_histo, minlength=self.len_seq)
 
         return json_lst
          # json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
@@ -278,6 +254,22 @@ class SifiPipeline(object):
         re_res = [re.findall(pattern, sequence) for pattern in patterns]
         return bool(re_res)
 
+    def export(self, path):
+        if not os.path.exists(path):
+            fname, ext = os.path.splitext(path)
+            if ext == '':
+                path = fname + '.csv'
+        with open(self.output_path, 'r') as fp:
+            exportJsonData = json.load(fp)
+            csv_columns = list(exportJsonData[0].keys())
+            try:
+                with open(path, 'w') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                    writer.writeheader()
+                    for data in exportJsonData:
+                        writer.writerow(data)
+            except IOError:
+                print("I/O error")
     def free_energy3(self, sirna_sequence):
         """Calculate the free energy of a sequence.
 
