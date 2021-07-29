@@ -23,10 +23,10 @@
         </v-col>
         </v-row>
         <v-row>
-          <v-col cols="12" class="py-0">
+          <v-col lg="12" xl="6" class="py-0">
             <div class="subtitle">Right end type</div>
           </v-col>
-          <v-col cols="12" class="py-0">
+          <v-col lg="12" xl="6" class="py-0">
             <v-radio-group
               v-model="right_end_type"
               row
@@ -44,10 +44,10 @@
         </v-row>
         
         <v-row>
-          <v-col cols="12">
+          <v-col lg="12" xl="6">
             <div class="subtitle">GC content range</div>
           </v-col>
-          <v-col cols="12" class="pt-0">
+          <v-col lg="12" class="pt-0" xl="6">
             <v-range-slider
               v-model="range"
               :max="100"
@@ -80,20 +80,20 @@
             </v-range-slider>
           </v-col>
         </v-row>
-        <v-row>
-          <v-col cols="5">
+        <v-row class="mr-n8">
+          <v-col cols="7" class="pr-0">
             <div>Avoid contiguous G's or C's</div>
           </v-col>
-          <v-col cols="2">
+          <v-col cols="2" class="px-0 pt-0">
             <v-text-field
               :value="consecutive"
               hide-details
               single-line
               type="number"
-              class="mt-0 pt-0"
+              class="ma-0 pa-0"
             ></v-text-field>
           </v-col>
-          <v-col>
+          <v-col cols="3" class="px-0">
             <div>nt or more</div>
           </v-col>
         </v-row>
@@ -105,6 +105,7 @@
           name="sequence-input"
           label=""
           height="380"
+          style="font-family: monospace;"
           :value="sequences | trimSequence"
           counter
           @input="value=>sequences=value"
@@ -186,8 +187,14 @@ export default {
   filters: {
     trimSequence: function(value){
       if (!value) return ''
-      value = value.toString()
-      return value.trim().replace(/\n/g, '')
+      value = value.toString().trim().replace(/\n/g, '').toUpperCase()
+      var [index, seq_list, len] = [0, [], value.length]
+      while (index < len){
+        seq_list.push(value.substring(index, index+10))
+        index += 10
+      }
+      console.log(seq_list)
+      return seq_list.join(' ')
     }
   },
   methods: {
