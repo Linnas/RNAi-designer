@@ -22,11 +22,11 @@
             ></v-text-field>
         </v-col>
         </v-row>
-        <v-row>
-          <v-col lg="12" xl="6" class="py-0">
-            <div class="subtitle">Right end type</div>
+        <v-row class="mt-0">
+          <v-col lg="12" xl="4" class="d-flex align-center">
+            <div class="subtitle">Right end type:</div>
           </v-col>
-          <v-col lg="12" xl="6" class="py-0">
+          <v-col lg="12" xl="8">
             <v-radio-group
               v-model="right_end_type"
               row
@@ -34,6 +34,7 @@
               <v-radio
                 label="complement"
                 value="complement"
+                class="mr-12"
               ></v-radio>
               <v-radio
                 label="dangling"
@@ -44,14 +45,14 @@
         </v-row>
         
         <v-row>
-          <v-col lg="12" xl="6">
-            <div class="subtitle">GC content range</div>
+          <v-col lg="12" xl="4">
+            <div class="subtitle">GC content range(%):</div>
           </v-col>
-          <v-col lg="12" class="pt-0" xl="6">
+          <v-col lg="12" class="pt-0" xl="8">
             <v-range-slider
               v-model="range"
-              :max="100"
-              :min="0"
+              max="100"
+              min="0"
               hide-details
               class="align-center"
             >
@@ -80,25 +81,22 @@
             </v-range-slider>
           </v-col>
         </v-row>
-        <v-row class="mr-n8">
-          <v-col cols="7" class="pr-0">
+        <div class="d-flex align-center my-6">
             <div>Avoid contiguous G's or C's</div>
-          </v-col>
-          <v-col cols="2" class="px-0 pt-0">
-            <v-text-field
-              :value="consecutive"
-              hide-details
-              single-line
-              type="number"
-              class="ma-0 pa-0"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="3" class="px-0">
+            <div style="width:70px">
+              <v-text-field
+                :value="consecutive"
+                hide-details
+                single-line
+                dense
+                type="number"
+                class="shrink ml-6"
+              ></v-text-field>
+            </div>
+            
             <div>nt or more</div>
-          </v-col>
-        </v-row>
+        </div>
       </v-col>
-
       <v-col cols="4">
         <v-textarea
           solo
@@ -108,19 +106,27 @@
           style="font-family: monospace;"
           :value="sequences | trimSequence"
           counter
+          :counter-value="(sequences) => (sequences || '').replace(/\s/g, '').length"
           @input="value=>sequences=value"
           placeholder="Paste your sequence here."
         ></v-textarea>
         <v-row>
           <v-col class="d-flex justify-center">
-            <v-btn rounded x-large @click="startPipeline()" :loading="loading">parse</v-btn>
+            <v-btn 
+              rounded 
+              x-large 
+              @click="startPipeline()" 
+              :loading="loading" 
+              :disabled="disabled"
+              >
+              parse
+            </v-btn>
           </v-col>
         </v-row>
       </v-col>
-
       <v-col cols="4" class="pl-8">
         <v-row v-for="(item, index) in items" :key="item.label" dense>
-        <v-col cols="9">
+        <v-col cols="8">
           <v-checkbox
             v-model="item.status"
             :label="item.label"
@@ -182,18 +188,20 @@ export default {
   computed: {
     ...mapState([
       "databases"
-    ])
+    ]),
+    disabled() {
+      return !(this.sequences && this.database)
+    }
   },   
   filters: {
     trimSequence: function(value){
       if (!value) return ''
-      value = value.toString().trim().replace(/\n/g, '').toUpperCase()
+      value = value.toString().trim().replace(/\n/g, '').replace(/\s/g, '').toUpperCase()
       var [index, seq_list, len] = [0, [], value.length]
       while (index < len){
         seq_list.push(value.substring(index, index+10))
         index += 10
       }
-      console.log(seq_list)
       return seq_list.join(' ')
     }
   },
