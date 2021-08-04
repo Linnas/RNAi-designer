@@ -26,7 +26,7 @@
           <v-col lg="12" xl="4" class="d-flex align-center">
             <div class="subtitle">Right end type:</div>
           </v-col>
-          <v-col lg="12" xl="8">
+          <v-col lg="12" xl="8" :class="{'my-n6' : $vuetify.breakpoint.lg}">
             <v-radio-group
               v-model="right_end_type"
               row
@@ -34,7 +34,6 @@
               <v-radio
                 label="complement"
                 value="complement"
-                class="mr-12"
               ></v-radio>
               <v-radio
                 label="dangling"
@@ -48,7 +47,7 @@
           <v-col lg="12" xl="4">
             <div class="subtitle">GC content range(%):</div>
           </v-col>
-          <v-col lg="12" class="pt-0" xl="8">
+          <v-col class="pt-0" xl="8">
             <v-range-slider
               v-model="range"
               max="100"
@@ -147,7 +146,6 @@
     </v-row>
   </v-container>
 </template>
-
 <script>
 import { mapState } from 'vuex'
 export default {
@@ -244,7 +242,11 @@ export default {
         this.loading = false;
       })
     }
-    
   }
 }
 </script>
+<style scoped>
+.v-input--radio-group__input {
+    justify-content: space-around !important;
+  }
+</style>
