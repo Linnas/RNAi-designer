@@ -54,4 +54,10 @@ export default {
 			color: rgba(0, 0, 0, 1.0);
 		}
 	}
+	@media screen and (min-width: 120em) {
+		p {
+			font-size: 1.1375rem;
+			color: rgba(0, 0, 0, 1.0);
+		}
+	}
 </style>

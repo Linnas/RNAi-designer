@@ -37,7 +37,7 @@ def create_bowtie_database(db_name, database_file_location, bowtie_location):
     """Creates a Bowtie DB."""
 
     os.chdir(bowtie_location)
-    process = subprocess.Popen(["bowtie-build-s", database_file_location, str(db_name)])
+    process = subprocess.Popen(["bowtie-build", database_file_location, str(db_name)])
     process.wait()
 
     fpath = os.path.join(bowtie_location, str(db_name) + '.rev.1.ebwt')
