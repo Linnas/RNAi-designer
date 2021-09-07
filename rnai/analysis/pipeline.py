@@ -441,12 +441,15 @@ class SifiPipeline(object):
     def is_snp(self, hit_name, start_position):
         snp_sum = 0
 
-        for snp in self.SNPs[hit_name]:
-            if int(start_position) <= int(snp) <= int(start_position) + int(self.sirna_size) - 1:
-                snp_sum += 1
-            else:
-                pass
-        return 'Yes' if bool(snp_sum) else 'No' 
+        if hit_name in self.SNPs.keys(): 
+            for snp in self.SNPs[hit_name]:
+                if int(start_position) <= int(snp) <= int(start_position) + int(self.sirna_size) - 1:
+                    snp_sum += 1
+                else:
+                    pass
+            return 'Yes' if bool(snp_sum) else 'No' 
+        else:
+            return 'No'   
 
     def calculate_efficiency(self, sirna_sequence, sirna_sequence_n2, lunp_data_xmer):
         """"""
