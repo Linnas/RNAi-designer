@@ -50,9 +50,9 @@ class SifiPipeline(object):
         self.strand_check = strand_check                                        # Strand selection is enabled or disabled
         self.end_check = end_check                                              # End stability selection is enabled or disabled
         self.accessibility_check = accessibility_check                          # Target site accessibility is enabled or disabled
-        self.accessibility_window = accessibility_window                        # Accessibility window
-        self.end_stability_treshold = end_stability_treshold                    # End stability treshold
-        self.ts_accessibility_treshold = target_site_accessibility_treshold     # Target site accessibility threshold
+        self.accessibility_window = int(accessibility_window)                     # Accessibility window
+        self.end_stability_treshold = float(end_stability_treshold)                # End stability treshold
+        self.ts_accessibility_treshold = float(target_site_accessibility_treshold)   # Target site accessibility threshold
         self.terminal_check = terminal_check
         self.no_efficience = no_efficience
         self.min_gc_range = min_gc_range
@@ -99,6 +99,7 @@ class SifiPipeline(object):
         self.output_path = out_path
         fp = open(out_path, 'w')
         json_lst = self.data_to_json(self.query_name, self.bowtie_data, no_target, self.lunp_data, target)
+        print(len(json_lst))
         if self.remove_damaging_motifs:
              json_lst =  list(filter(lambda x: self.is_damaging(x['sirna_sequence']), json_lst))
         json_lst = list(filter(lambda x: self.max_gc_range > x['gc_content']  > self.min_gc_range, json_lst))
@@ -159,7 +160,8 @@ class SifiPipeline(object):
     def data_to_json(self, query_name, align_data, no_target, lunp_data, main_targets):
         """Extracts the data from bowtie results and put everything into json format.
            Efficiency is calculated for each siRNA.
-           If no target is found, for design mode the siRNA fasta file is used instead of Bowtie data."""
+           If no target is found, for design mode the siRNA fasta file is 
+           used instead of Bowtie data."""
 
         json_lst = []
         for entity in align_data:
@@ -218,35 +220,27 @@ class SifiPipeline(object):
                 target_site_accessibility,\
                 thermo_effcicient = \
                 self.calculate_efficiency(sirna_sequence, sirna_sequence_n2, lunp_data_xmer)
-                
+
                 delta_MEF_enegery = anti_sense5_MFE_enegery - sense5_MFE_enegery
+                
                 gc_percentage = SeqUtils.GC(sirna_sequence)
                 SNP_exist = self.is_snp(main_targets, query_position-1)
                 json_dict = {
-                    "query_name": query_name,
-                    "sirna_name":sirna_name,
                     "sirna_position": query_position,
                     "sirna_sequence": sirna_sequence,
-                    "sirna_complement": sirna_complement,
                     "is_efficient": is_efficient,
                     "SNP_exist": SNP_exist,
                     "strand_selection": strand_selection,
                     "end_stability": end_stability,
-                    "sense5_MFE_enegery": sense5_MFE_enegery,
-                    "anti_sense5_MFE_enegery": anti_sense5_MFE_enegery,
-                    "delta_MFE_enegery": delta_MEF_enegery,
+                    "sense5_MFE_enegery": round(sense5_MFE_enegery,4),
+                    "anti_sense5_MFE_enegery": round(anti_sense5_MFE_enegery,4),
+                    "delta_MFE_enegery": round(delta_MEF_enegery,4),
                     "target_site_accessibility": target_site_accessibility,
-                    "accessibility_value": lunp_data_xmer,
-                    "is_off_target": off_target,
-                    "hit_name": hit_name,
-                    "gc_content":gc_percentage,
-                    "reference_strand_pos":reference_strand_pos,
-                    "strand": strand,
-                    "mismatches": missmatches,
+                    "accessibility_value": round(lunp_data_xmer,4),
+                    "gc_content":round(gc_percentage,2),
                     "thermo_effcicient": thermo_effcicient
                 }
-                if(is_efficient):
-                    json_lst.append(json_dict)
+                json_lst.append(json_dict)
         return json_lst
 
     def gc_contiguous(self, sequence):
@@ -468,7 +462,6 @@ class SifiPipeline(object):
             end_stability, sense5_MFE_enegery, anti_sense5_MFE_enegery = self.end_stability(sirna_sequence, sirna_sequence_n2)
             target_site_accessibility = self.pair_probability(lunp_data_xmer)
             thermo_effcicient = self.check_efficient(strand_selection, end_stability, target_site_accessibility)
-
             if self.terminal_check:
                 if sirna_sequence[self.sirna_size-3] == 'A' or sirna_sequence[self.sirna_size-3] == 'T':
                     #print "A/T at S19"

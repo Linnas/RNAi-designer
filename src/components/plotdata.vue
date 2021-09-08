@@ -1,5 +1,5 @@
 <template>
-   <v-container style="max-width:1385px !important">
+   <v-container style="max-width:1585px !important">
       <v-tabs
          v-model="tab"
          background-color="transparent"
@@ -72,58 +72,18 @@ export default {
    data: () => ({
       reads: null,
       tab:null,
-      headers:[{
-         text: 'Position',
-         value: 'sirna_position'
-       }, {
-         text: 'Sequence',
-         value: 'sirna_sequence'
-       }, {
-         text: 'duplex',
-         value: 'sirna_complement'
-       }, {
-         text: 'Efficiency',
-         value: 'is_efficient'
-       }, {
-         text: 'GC content',
-         value: 'gc_content'
-       },{
-         text: 'SNP exist',
-         value: 'SNP_exist'
-       },{
-         text:'Strand selection',
-         value: 'strand_selection'
-       }, {
-         text:'End stability',
-         value: 'end_stability'
-       }, {
-         text:'Accessibility',
-         value: 'accessibility_value'
-       }, {
-         text:'Target site accessibility',
-         value:'target_site_accessibility'
-       }, {
-         text:'Antisense MFE',
-         value:'anti_sense5_MFE_enegery'
-       }, {
-         text:'Sense MFE',
-         value:'sense5_MFE_enegery'
-       }, {
-         text:'Delta MFE',
-         value:'delta_MFE_enegery'
-       }, {
-         text:'Thermo efficient',
-         value:'thermo_effcicient'
-       }]
-   }),
+      headers:null
+      }),
    created() {
       var plot_data = this.$store.state.plot_data;
-      plot_data.forEach(e => {
-        e['sirna_complement'] = 'XX'+e['sirna_sequence']+'\n'+e['sirna_complement']+'XX'
+      this.headers = Object.keys(plot_data[0]).map(v => {
+        return {
+          text:v.split('_').join(' '),
+          value:v
+        }
       })
-      console.log(plot_data[0])
+      console.log(this.headers)
       this.reads = plot_data
-      console.log(this.reads[0])
    },
    methods:{
       exportAsExcel() {

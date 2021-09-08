@@ -138,7 +138,7 @@
             dense
             v-if="index !== 0 && index !== 1 && index !== 5"
             type="number"
-            :value="item.value"
+            v-model="item.value"
           ></v-text-field>
         </v-col>
         </v-row>
@@ -208,8 +208,8 @@ export default {
       this.loading = true;
       var no_efficience = true;
       const { siRNA_size, mismatch, right_end_type, sequences,consecutive, database, items, bowtie_location, rnaplfold_location, range } = this;
-      if (items[0].status && items[1].status && items[2].status && items[3].status)
-          no_efficience = false
+      if (items[0].status && items[1].status && items[2].status && items[3].status) 
+        no_efficience = false
       const query = {
         siRNA_size, mismatch, sequences,
         right_end_type, 
