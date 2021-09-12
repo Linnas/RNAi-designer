@@ -15,81 +15,127 @@ from analysis    import general_helpers
 
 
 class SifiPipeline(object):
-    def __init__(self, bowtie_db, query_sequences, sirna_size, mismatches, accessibility_check,
-                 accessibility_window, rnaplfold_location, bowtie_location, strand_check, end_check,
-                 end_stability_treshold, target_site_accessibility_treshold, terminal_check,
-                 no_efficience, min_gc_range, max_gc_range, right_end_type,remove_damaging_motifs,contiguous_num):
+    """
+    Class for si-Fi pipeline:
 
+        si-Fi pipeline for RNAi design.
+       1. Save query sequence as fasta file.
+       2. Split query sequence into xmers and store as fasta file.
+       3. Run BOWTIE against DB and extract all positions of off-targets and main targets.
+       4. For each siRNA, do strand selection, end stability and target site accessibility for efficiency.
+       5. Start RNAplfold to get pair probabilities.
+       6. Store data into json file for plotting.
 
-        """
-        Class for si-Fi pipeline:
+       si-Fi pipeline for off-target prediction.
+       1. Save query sequence as fasta file.
+       2. Split query sequence into xmers and store as fasta file.
+       3. Run BOWTIE against DB and extract all information.
+       4. For each hit, do strand selection for efficiency.
+       5. Store data into json file for plotting.
 
-            si-Fi pipeline for RNAi design.
-           1. Save query sequence as fasta file.
-           2. Split query sequence into xmers and store as fasta file.
-           3. Run BOWTIE against DB and extract all positions of off-targets and main targets.
-           4. For each siRNA, do strand selection, end stability and target site accessibility for efficiency.
-           5. Start RNAplfold to get pair probabilities.
-           6. Store data into json file for plotting.
+    Parameters
+    ----------
+    bowtie_db
+            bowtie database to be used for alignment. e.g. 'hg19'  
+    query_sequences
+            List of all query sequences in multi fasta format
+    sirna_size
+            the sequence length of sirna
+    mismatches
+            Allowed mismatches length
+    accessibility_check
+            Check if the secondary structure is optimal for siRNA accessibility
+    accessibility_window
+            Check the unparied probability of windows of given sieze.(default='8')
+    rnaplfold_location
+            RNAplfold package binary executable location.
+    bowtie_location
+            Bowtie package binary execuatble location
+    strand_check
+            Strand selection is enabled or disabled
+    end_check
+            End stability selection is enabled or disabled
+    end_stability_treshold
+            MFE difference between sense5' and antisense5'
+    target_site_accessibility_treshold
+            unpaired probability threshold for local sequences. 0 means no check is needed.
+    terminal_check
+            check if particular amino acids occur at specified position on siRNA sequence
+    no_efficience
+            check the efficience empowered by other checks.
+    min_gc_range
+            minimum GC content
+    max_gc_range
+            maximum GC content
+    right_end_type
+            terminal sequence type. can be 'dangling' or 'complement'
+    remove_damaging_motifs
+            remove motifs that cause damaging to cells.
+    contiguous_num
+            Allowed max contiguous same amino acid to occur on siRNA sequence.
+    """
 
-           si-Fi pipeline for off-target prediction.
-           1. Save query sequence as fasta file.
-           2. Split query sequence into xmers and store as fasta file.
-           3. Run BOWTIE against DB and extract all information.
-           4. For each hit, do strand selection for efficiency.
-           5. Store data into json file for plotting.
-        """
+    WINSIZE = 80                                 
+    SPAN = 40                                    
+    TEMPERATURE = 22                             
+    SIRNA_START_POSITION = 0                     
+    OVERHANG = 2                                 
+    END_NUCLOTIDES = 3                          
+    SNP_LOCATION = os.path.join(bowtie_location + 'snp.json')
 
-        self.bowtie_db = bowtie_db                                              # Bowtie DB
-        self.query_sequences = query_sequences                                  # List of all query sequences in multi fasta format
-        self.sirna_size = sirna_size                                            # siRNA size
-        self.mismatches = mismatches                                            # Allowed mismatches                                                                                # DB path
-        self.rnaplfold_location = rnaplfold_location                            # Rnaplfold path
-        self.bowtie_location = bowtie_location                                  # Bowtie path
+    def __init__(
+        self,
+        accessibility_check:bool = True,
+        accessibility_window:str = 8,
+        terminal_check:bool = True,
+        strand_check:bool = True,
+        end_check:bool = True,
+        end_stability_treshold: float = None,
+        target_site_accessibility_treshold: float = None,
+        no_efficience:bool = False,
+        min_gc_range: float = 40,
+        max_gc_range: float = 60,
+        right_end_type: str = None,
+        remove_damaging_motifs:bool = True,
+        contiguous_num:int = None
+    ):
+        if not os.path.exists(SNP_LOCATION):
+            raise ValueError(f'try to find SNP file at {SNP_LOCATION}, failed!')
+        with open(SNP_LOCATION) as f:
+            self.SNPs = json.load(f)
+        self._bowtie_data = None,
+        self._luna_data = None
+    def run_pipeline(
+        self,
+        bowtie_db: str = None,
+        rnaplfold_location: str = None,
+        bowtie_location: str = None,
+        query_sequences:str = None,
+        sirna_size: int = 21,
+        mismatches:int = 0,
+    ):
+        seq_record = SeqIO.parse(self.query_sequences, "fasta"):
+        # Store ID and sequence
+        query_name = seq_record.id
+        query_sequence = str(seq_record.seq)
 
-        self.strand_check = strand_check                                        # Strand selection is enabled or disabled
-        self.end_check = end_check                                              # End stability selection is enabled or disabled
-        self.accessibility_check = accessibility_check                          # Target site accessibility is enabled or disabled
-        self.accessibility_window = int(accessibility_window)                     # Accessibility window
-        self.end_stability_treshold = float(end_stability_treshold)                # End stability treshold
-        self.ts_accessibility_treshold = float(target_site_accessibility_treshold)   # Target site accessibility threshold
-        self.terminal_check = terminal_check
-        self.no_efficience = no_efficience
-        self.min_gc_range = min_gc_range
-        self.max_gc_range = max_gc_range
-        self.right_end_type = right_end_type 
-        self.remove_damaging_motifs = remove_damaging_motifs
-        self.contiguous_num = contiguous_num
+        bowtie_data = self.run_bowtie(
+            query_sequence=query_sequence,
+            bowtie_db=bowtie_db,
+            bowtie_location=bowtie_location,
+            sirna_size=sirna_size,
+            mismatches=mismatches,
+        )
+        lunp_data = self.run_rnaplfold(
+            query_name=query_name, 
+            sirna_size=sirna_size
+            query_sequence=query_sequence,
+            rnaplfold_location=rnaplfold_location
+        )
+        self._bowtie_data = bowtie_data
+        self._lunp_data = luna_data
 
-
-        # Some constants
-        self.winsize = 80                                                        # Average the pair probabil. over windows of given size
-        self.span = 40                                                           # Set the maximum allowed separation of a base pair to span
-        self.temperature = 22                                                    # Temperature for calculation free energ
-        self.sirna_start_position = 0                                            
-        self.overhang = 2                                                        # siRNA overhang
-        self.end_nucleotides = 3                                                 # siRNA end nucleotides
-        self.snp_location = bowtie_location + '\\snp.json' 
-        with open(self.snp_location) as f:
-            self.SNPs = json.load(f)                                                                              
-
-    def run_pipeline(self):
-        """Start the si-Fi pipeline either in off-target or design mode."""
-
-        for seq_record in SeqIO.parse(self.query_sequences, "fasta"):
-            # Store ID and sequence
-            self.query_name = seq_record.id
-            query_sequence = str(seq_record.seq)
-            self.len_seq = len(query_sequence)
-            self.sirna_l = []
-            for i in range(0, len(query_sequence)-self.sirna_size+1):
-                self.sirna_l.append(query_sequence[i:i+self.sirna_size])
-
-
-            self.bowtie_data = self.run_bowtie(query_sequence)
-            self.lunp_data = self.run_rnaplfold(self.query_name, query_sequence)
-
-            return self.bowtie_data, self.lunp_data
+        return bowtie_data, lunp_data
 
 
     def process_data(self, target):
@@ -110,9 +156,16 @@ class SifiPipeline(object):
         return json_lst
          # json_lst, eff_sirna_histo.tolist(), main_histo.tolist()
 
-    def run_bowtie(self, sequence):
+    def run_bowtie(
+        self,
+        query_sequence=None,
+        bowtie_db=None,
+        bowtie_location=None,
+        sirna_size=None,
+        mismatches=None,
+        ):
         """Run BOWTIE alignment."""
-        os.chdir(self.bowtie_location)
+        os.chdir(bowtie_location)
         # -a report all alignments per read;
         # -n max mismatches in seed
         # -y try hard to find valid alignments, at the expense of speed
@@ -122,13 +175,21 @@ class SifiPipeline(object):
         fdd, input_path = tempfile.mkstemp(suffix=".fasta")
 
         with os.fdopen(fdd, mode="r+") as fp:
-            for i in range(0, len(sequence)-self.sirna_size+1):
+            for i in range(0, len(query_sequence)-sirna_size+1):
                 fp.write('> sirna'+str(i+1)+'\n')
-                fp.write(sequence[i:i+self.sirna_size].upper() + '\n')
+                fp.write(query_sequence[i:i+sirna_size].upper() + '\n')
 
-        process = subprocess.Popen(["bowtie", "-a", "-v", str(self.mismatches),  "-y",
-                                    self.bowtie_db, "-f",
-                                    input_path, out_path])
+        process = subprocess.Popen([
+            "bowtie", 
+            "-a", 
+            "-v", 
+            str(mismatches),  
+            "-y",
+            bowtie_db, 
+            "-f",
+            input_path, 
+            out_path
+        ])
         process.wait()
 
         with os.fdopen(fd) as fp:
@@ -139,13 +200,47 @@ class SifiPipeline(object):
         os.unlink(input_path)
         return bowtie_data
 
-    def run_rnaplfold(self, query_name, sequence):
+    def run_rnaplfold(
+        self,
+        query_name=None, 
+        query_sequence=None,
+        sirna_size=None,
+        rnaplfold_location=None
+        ):
+        '''
+        calculate locally stable secondary structure − pair probabilities
 
-        os.chdir(self.rnaplfold_location)
+        Computes local pair probabilities for base pairs with a maximal span of L. 
+        The probabilities are averaged over all windows of size L that contain the 
+        base pair. For a sequence of length n and a window size of L the algorithm 
+        uses only O(n+L*L) memory and O(n*L*L) CPU time. 
+        Thus it is practical to "scan" very large genomes for short stable RNA structures.
+        
+        Output consists of a dot plot in postscript file, 
+        where the averaged pair probabilities can easily be parsed and visually inspected.
+        
+        The -u option makes i possible to compute the probability that 
+        a stretch of x consequtive nucleotides is unpaired, which is 
+        useful for predicting possible binding sites. Again this probability 
+        is averaged over all windows containing the region.
+                
+        The output is a plain text matrix containing on each line a position i 
+        followed by the probability that i is unpaired, [i-1..i] is unpaired [i-2..i] 
+        is unpaired and so on to the probability that [i-x+1..i] is unpaired.
+        '''
+        os.chdir(rnaplfold_location)
 
         with tempfile.TemporaryDirectory() as fp:
             prc_stdout = subprocess.PIPE
-            prc = subprocess.Popen(['RNAplfold', '-W', '%d'%self.winsize,'-L', '%d'% self.span, '-u', '%d'%self.sirna_size, '-T', '%.2f'%self.temperature], stdin=subprocess.PIPE, stdout=prc_stdout, cwd=fp)
+            prc = subprocess.Popen([
+                'RNAplfold', 
+                '-W', '%d'%WINSIZE,
+                '-L', '%d'% SPAN, 
+                '-u', '%d'%sirna_size, 
+                '-T', '%.2f'%TEMPERATURE], 
+                stdin=subprocess.PIPE, 
+                stdout=prc_stdout, 
+                cwd=fp)
             prc.stdin.write(sequence.encode())
             prc.stdin.write('\n'.encode())
             prc.communicate()
@@ -153,7 +248,7 @@ class SifiPipeline(object):
             lunp_file = os.path.join(fp, 'plfold_lunp')
             lunp_data = np.loadtxt(lunp_file, dtype='str')
             # Delete first lines self.sirna_size-1 because they are not complete
-            lunp_data = np.delete(lunp_data, np.r_[:self.sirna_size-1], 0)
+            lunp_data = np.delete(lunp_data, np.r_[:sirna_size-1], 0)
 
         return lunp_data
 
