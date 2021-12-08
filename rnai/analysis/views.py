@@ -49,28 +49,30 @@ def run_pipeline(request):
 		order = json.loads(request.body)
 
 	sequences = order['sequences']
-	plain_text = general_helpers.validate_seq(sequences)
-	fasta = general_helpers.validate_fasta_seq(sequences)
+	is_sequence = general_helpers.validate_seq(sequences)
+	# fasta = general_helpers.validate_fasta_seq(sequences)
 
-	if plain_text:
+	if is_sequence:
 	    sequences = '>' + 'my_sequence' + '\n' + sequences
 	    sequence_temp_file = general_helpers.save_seq_file(sequences)
-	elif fasta == 1:
-		sequence_temp_file = general_helpers.save_seq_file(sequences)
-	elif fasta > 1:
-		sequence_temp_file = False
-		print("Please enter only one sequence or use the batch mode.")
+	# elif fasta == 1:
+	# 	sequence_temp_file = general_helpers.save_seq_file(sequences)
+	# elif fasta > 1:
+	# 	sequence_temp_file = False
+	# 	print("Please enter only one sequence or use the batch mode.")
 	else:
-		sequence_temp_file = False
-		print('Please enter a valid nucleic acid sequence!')
+		# sequence_temp_file = False
+		raise ValueError('Please enter a valid nucleic acid sequence!')
 	if sequence_temp_file:
-		sifi = pipeline.SifiPipeline(order['database'], sequence_temp_file, order['siRNA_size'],\
-		 order['mismatch'], order['accessibility_check'], order['accessibility_window'], rnaplfold_location,\
-		  bowtie_location, order['strand_check'], order['end_check'], order['end_stability_treshold'],\
-		   order['target_site_accessibility_treshold'], order['terminal_check'], order['no_efficience'], order['min_gc_range'], order['max_gc_range'], \
-		   order['right_end_type'], order['remove_damaging_motifs'], order['contiguous_num'])
-		
-		align_data, luna_data = sifi.run_pipeline()
+		sifi = pipeline.SifiPipeline()
+		align_data, luna_data = sifi.run_pipeline(
+			bowtie_db = order['database'],
+	        rnaplfold_location = rnaplfold_location,
+	        bowtie_location = bowtie_location,
+	        query_sequences = sequence_temp_file,
+	        sirna_size = order['siRNA_size'],
+	        mismatches = order['mismatch']
+	    )
 		response['align_data'] = align_data
 		response['luna_data']  = luna_data.tolist()
 	return JsonResponse(response)
@@ -81,8 +83,21 @@ def process_data(request):
 	response = dict()
 	if request.method == 'POST':
 		order = json.loads(request.body)
-		target = order['target']
-		table_data = sifi.process_data(target)
+		table_data = sifi.process_data(
+			target = order['target'],
+			accessibility_check = order['accessibility_check'],
+	        accessibility_window = order['accessibility_window'],
+	        terminal_check = order['terminal_check'],
+	        strand_check = order['strand_check'],
+	        end_check = order['end_check'],
+	        end_stability_treshold = order['end_stability_treshold'],
+	        target_site_accessibility_treshold = order['target_site_accessibility_treshold'],
+	        min_gc_range = order['min_gc_range'],
+	        max_gc_range = order['max_gc_range'],
+	        right_end_type = order['right_end_type'],
+	        remove_damaging_motifs = order['remove_damaging_motifs'],
+	        contiguous_num = order['contiguous_num']
+			)
 		response['table_data']     = table_data
 		# response['json_lst']       = json_lst
 		# response['eff_sirna_plot'] = eff_sirna_plot
